@@ -1,0 +1,58 @@
+{
+  "name": "google-search-console-updater",
+  "version": "1.0.0",
+  "description": "Portable app for Google Search Console URL inspection and indexing requests",
+  "main": "electron/main.cjs",
+  "author": "Marfa",
+  "license": "CC-BY-NC-SA-4.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Marfa/Google_Search_Console_Index_Updater.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac zip",
+    "build:mac": "electron-builder --mac zip",
+    "build:publish": "electron-builder --mac zip --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "google-auth-library": "^9.15.1"
+  },
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.marfa.gsc-updater",
+    "productName": "Google Search Console Updater",
+    "icon": "build/icon.png",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "build/icon.png",
+      "config.example.json",
+      "package.json"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Marfa",
+        "repo": "Google_Search_Console_Index_Updater"
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        }
+      ],
+      "artifactName": "Google-Search-Console-Updater-${version}-mac-arm64.${ext}",
+      "category": "public.app-category.utilities"
+    }
+  }
+}

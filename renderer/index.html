@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Search Console Updater</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div>
+          <h1 data-i18n="appTitle">Google Search Console Updater</h1>
+          <p class="subtitle" data-i18n="subtitle">Проверка URL и запрос индексирования через Google Search Console</p>
+        </div>
+        <div class="header-tools">
+          <div class="lang-switch" id="lang-switch">
+            <button class="lang-btn active" id="lang-ru" type="button">RU</button>
+            <button class="lang-btn" id="lang-en" type="button">EN</button>
+          </div>
+          <button class="btn btn-secondary" id="about-btn" type="button" data-i18n="about">О программе</button>
+          <div class="auth-panel" id="auth-panel">
+            <span class="auth-status" id="auth-status" data-i18n="authNotSignedIn">Не авторизован</span>
+            <button class="btn btn-primary" id="login-btn" type="button" data-i18n="login">Войти в Google</button>
+            <button class="btn btn-secondary hidden" id="cancel-login-btn" type="button" data-i18n="cancelLogin">Отменить вход</button>
+            <button class="btn btn-secondary hidden" id="logout-btn" type="button" data-i18n="logout">Выйти</button>
+          </div>
+        </div>
+      </header>
+
+      <p class="update-status hidden" id="update-status"></p>
+
+      <section class="card" id="setup-card">
+        <h2 data-i18n="setupTitle">Настройка OAuth</h2>
+        <p class="hint">
+          <span data-i18n="setupHint">Для работы приложения нужны OAuth-учётные данные из Google Cloud Console.</span>
+          <a href="#" id="setup-link" data-i18n="setupLink">Инструкция по настройке</a>
+        </p>
+        <div class="notice notice-secondary" id="oauth-notice-users">
+          <span data-i18n="accessDeniedNotice">Ошибка access_denied: добавьте свой Google-email в Google Auth Platform → Audience → Test users.</span>
+          <a href="#" id="test-users-link" data-i18n="openAudience">Открыть Audience</a>
+        </div>
+        <div class="notice notice-secondary" id="api-notice">
+          <span data-i18n="apiNotice">Обязательные API: включите в Google Cloud Console</span>
+          <a href="#" id="enable-search-console-api" data-i18n="searchConsoleApi">Google Search Console API</a>
+          <span data-i18n="and">и</span>
+          <a href="#" id="enable-indexing-api" data-i18n="indexingApi">Web Search Indexing API</a>.
+        </div>
+        <div class="form-grid">
+          <label>
+            <span data-i18n="clientId">Client ID</span>
+            <input type="text" id="client-id" data-i18n-placeholder="clientIdPlaceholder" placeholder="xxx.apps.googleusercontent.com" />
+          </label>
+          <label>
+            <span data-i18n="clientSecret">Client Secret</span>
+            <input type="password" id="client-secret" data-i18n-placeholder="clientSecretPlaceholder" placeholder="Введите Client Secret" />
+          </label>
+        </div>
+        <div class="button-row">
+          <button class="btn btn-secondary" id="save-config-btn" type="button" data-i18n="saveSettings">Сохранить настройки</button>
+          <button class="btn btn-danger" id="reset-config-btn" type="button" data-i18n="resetSettings">Сбросить настройки</button>
+        </div>
+        <p class="status-message" id="config-message"></p>
+      </section>
+
+      <section class="card hidden" id="work-card">
+        <h2 data-i18n="workTitle">Проверка URL</h2>
+
+        <label class="field">
+          <span data-i18n="siteProperty">Свойство Search Console</span>
+          <select id="site-select">
+            <option value="" data-i18n="autoDetectSite">Автоопределение по URL</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="urlList">Список URL (по одному на строку)</span>
+          <textarea id="urls-input" rows="10" data-i18n-placeholder="urlPlaceholder"></textarea>
+        </label>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="process-btn" type="button" data-i18n="processBtn">Проверить и запросить индексирование</button>
+        </div>
+
+        <div class="progress hidden" id="progress-panel">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <p id="progress-text" data-i18n="waiting">Ожидание...</p>
+        </div>
+      </section>
+
+      <section class="card hidden" id="results-card">
+        <h2 data-i18n="resultsTitle">Результаты</h2>
+
+        <div class="summary" id="summary"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="colUrl">URL</th>
+                <th data-i18n="colStatus">Статус</th>
+                <th data-i18n="colCoverage">Состояние индекса</th>
+                <th data-i18n="colCrawl">Последний обход</th>
+                <th data-i18n="colAction">Действие</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+
+        <button class="btn btn-secondary" id="export-btn" type="button" data-i18n="exportCsv">Экспорт CSV</button>
+      </section>
+    </div>
+
+    <div class="modal hidden" id="about-modal" role="dialog" aria-modal="true">
+      <div class="modal-backdrop" id="about-backdrop"></div>
+      <div class="modal-card">
+        <h2 data-i18n="aboutTitle">О программе</h2>
+        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.0</span></p>
+        <p>
+          <strong data-i18n="aboutSource">Исходный код</strong>:
+          <a href="#" id="about-source-link">GitHub</a>
+        </p>
+        <p>
+          <strong data-i18n="aboutDonate">Донат</strong>:
+          <a href="#" id="about-donate-link">DonationAlerts</a>
+        </p>
+        <p>
+          <strong data-i18n="aboutDonateCrypto">Донат криптой</strong>:
+          <a href="#" id="about-crypto-link">NOWPayments</a>
+        </p>
+        <button class="btn btn-primary" id="about-close-btn" type="button" data-i18n="aboutClose">Закрыть</button>
+      </div>
+    </div>
+
+    <script src="i18n.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
