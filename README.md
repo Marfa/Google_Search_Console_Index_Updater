@@ -1,5 +1,7 @@
 # Google Search Console Updater
 
+> **English:** [README.en.md](README.en.md)
+
 Portable-приложение для macOS. Проверяет URL через [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) и запрашивает индексирование для страниц, которых нет в индексе.
 
 **Версия:** 1.0.0
@@ -132,3 +134,7 @@ npm run build:mac
 ├── LICENSE
 └── package.json
 ```
+
+## О проекте
+
+Код подготовлен с помощью [Cursor](https://cursor.com/) — AI-редактора для разработки программного обеспечения.
