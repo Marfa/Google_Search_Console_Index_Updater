@@ -1,3 +1,5 @@
+const { execSync } = require('child_process');
+const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const { app, shell } = require('electron');
 
@@ -5,6 +7,41 @@ const RELEASE_PAGE_URL =
   'https://github.com/Marfa/Google_Search_Console_Index_Updater/releases/latest';
 
 let mainWindow = null;
+let autoInstallSupported = null;
+
+function getAppBundlePath() {
+  if (process.platform !== 'darwin') {
+    return null;
+  }
+
+  return path.resolve(path.dirname(process.execPath), '..', '..', '..');
+}
+
+function isAutoInstallSupported() {
+  if (autoInstallSupported !== null) {
+    return autoInstallSupported;
+  }
+
+  if (!app.isPackaged || process.platform !== 'darwin') {
+    autoInstallSupported = true;
+    return autoInstallSupported;
+  }
+
+  try {
+    execSync(`codesign --verify --deep --strict "${getAppBundlePath()}"`, {
+      stdio: 'pipe',
+    });
+    autoInstallSupported = true;
+  } catch {
+    autoInstallSupported = false;
+  }
+
+  return autoInstallSupported;
+}
+
+function isSignatureInstallError(message = '') {
+  return /code signature|подпис|ShipIt|ресурсы кода/i.test(message);
+}
 
 function sendToWindow(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -51,18 +88,25 @@ function initAutoUpdater(window) {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
+    const manualInstallRequired = !isAutoInstallSupported();
     sendToWindow('update:status', {
       status: 'ready',
       version: info.version,
       releasePageUrl: RELEASE_PAGE_URL,
+      manualInstallRequired,
     });
   });
 
   autoUpdater.on('error', (error) => {
+    const rawMessage = error?.message || 'Unknown update error';
+    const manualInstallRequired =
+      !isAutoInstallSupported() || isSignatureInstallError(rawMessage);
+
     sendToWindow('update:status', {
       status: 'error',
-      message: error?.message || 'Unknown update error',
+      message: manualInstallRequired ? 'unsigned_mac_install' : rawMessage,
       releasePageUrl: RELEASE_PAGE_URL,
+      manualInstallRequired,
     });
   });
 
@@ -85,17 +129,31 @@ async function checkForUpdates() {
   return autoUpdater.checkForUpdates();
 }
 
-function installUpdate() {
+async function installUpdate() {
   if (!app.isPackaged) {
     return { success: false };
+  }
+
+  if (!isAutoInstallSupported()) {
+    await openReleasePage();
+    return {
+      success: false,
+      manualRequired: true,
+      openedBrowser: true,
+    };
   }
 
   try {
     autoUpdater.quitAndInstall(false, true);
     return { success: true };
   } catch (error) {
-    shell.openExternal(RELEASE_PAGE_URL);
-    return { success: false, openedBrowser: true, message: error.message };
+    await openReleasePage();
+    return {
+      success: false,
+      openedBrowser: true,
+      manualRequired: isSignatureInstallError(error.message),
+      message: error.message,
+    };
   }
 }
 
@@ -109,4 +167,5 @@ module.exports = {
   checkForUpdates,
   installUpdate,
   openReleasePage,
+  isAutoInstallSupported,
 };

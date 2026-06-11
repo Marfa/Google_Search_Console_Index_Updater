@@ -391,19 +391,29 @@ function handleUpdateStatus(status) {
       showDownload = true;
       break;
     case 'ready':
-      message = t('updateReady', { version: status.version });
+      if (status.manualInstallRequired) {
+        message = t('updateReadyManual', { version: status.version });
+        showInstall = false;
+        showDownload = true;
+      } else {
+        message = t('updateReady', { version: status.version });
+        showInstall = true;
+        showDownload = true;
+      }
       type = 'success';
-      showInstall = true;
-      showDownload = true;
       break;
     case 'none':
       message = t('updateNone', { version: status.installedVersion || getInstalledVersion() });
       type = 'success';
       break;
     case 'error':
-      message = status.message
-        ? `${t('updateError')} ${status.message}`
-        : t('updateError');
+      if (status.message === 'unsigned_mac_install') {
+        message = t('updateUnsignedMacError');
+      } else {
+        message = status.message
+          ? `${t('updateError')} ${status.message}`
+          : t('updateError');
+      }
       type = 'error';
       showDownload = true;
       break;
@@ -422,12 +432,25 @@ function handleUpdateStatus(status) {
   }
 
   showUpdateActions(showInstall, showDownload);
-  elements.aboutUpdateStatus.textContent =
-    status.status === 'ready' || status.status === 'error' ? t('updateManualHint') : message;
+  if (status.status === 'ready' || status.status === 'error') {
+    elements.aboutUpdateStatus.textContent = status.manualInstallRequired
+      ? t('updateManualHint')
+      : message;
+  } else {
+    elements.aboutUpdateStatus.textContent = message;
+  }
 }
 
 async function installUpdateNow() {
-  await window.searchUpdater.installUpdate();
+  const result = await window.searchUpdater.installUpdate();
+  if (result?.manualRequired) {
+    handleUpdateStatus({
+      ...state.updateStatus,
+      status: 'ready',
+      version: state.updateStatus?.version,
+      manualInstallRequired: true,
+    });
+  }
 }
 
 async function checkUpdatesNow() {

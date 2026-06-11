@@ -81,9 +81,13 @@ const TRANSLATIONS = {
     updateAvailable: 'Доступна новая версия {version}. Загрузка...',
     updateDownloading: 'Загрузка обновления: {percent}%',
     updateReady: 'Обновление {version} загружено. Нажмите «Установить и перезапустить».',
+    updateReadyManual: 'Доступна версия {version}. Скачайте .zip с GitHub и замените приложение вручную.',
     updateNone: 'Установлена последняя версия ({version})',
     updateError: 'Не удалось проверить обновления. Скачайте новую версию вручную с GitHub.',
-    updateManualHint: 'На macOS без подписи разработчика автоустановка может не сработать — скачайте .zip из Releases и замените приложение.',
+    updateUnsignedMacError:
+      'Автоустановка недоступна: приложение не подписано Apple. Скачайте .zip из Releases и замените приложение вручную.',
+    updateManualHint:
+      'Скачайте .zip из Releases, распакуйте и перетащите новое приложение в папку «Программы», заменив старое.',
     emDash: '—',
   },
   en: {
@@ -167,9 +171,13 @@ const TRANSLATIONS = {
     updateAvailable: 'Update {version} available. Downloading...',
     updateDownloading: 'Downloading update: {percent}%',
     updateReady: 'Update {version} downloaded. Click "Install and restart".',
+    updateReadyManual: 'Version {version} is available. Download the .zip from GitHub and replace the app manually.',
     updateNone: 'You have the latest version ({version})',
     updateError: 'Failed to check for updates. Download the new version manually from GitHub.',
-    updateManualHint: 'On unsigned macOS builds, auto-install may fail — download the .zip from Releases and replace the app.',
+    updateUnsignedMacError:
+      'Auto-install is unavailable because the app is not signed by Apple. Download the .zip from Releases and replace the app manually.',
+    updateManualHint:
+      'Download the .zip from Releases, unzip it, and drag the new app into Applications, replacing the old one.',
     emDash: '—',
   },
 };
