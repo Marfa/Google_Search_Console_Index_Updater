@@ -4,7 +4,7 @@
 
 Portable-приложение для macOS. Проверяет URL через [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) и запрашивает индексирование для страниц, которых нет в индексе.
 
-**Версия:** 1.0.1
+**Версия:** 1.0.2
 
 **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
 
@@ -29,7 +29,7 @@ Portable-приложение для macOS. Проверяет URL через [G
 
 Готовая сборка для macOS (arm64) доступна в [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases):
 
-1. Скачайте `Google-Search-Console-Updater-1.0.1-mac-arm64.zip`
+1. Скачайте `Google-Search-Console-Updater-1.0.2-mac-arm64.zip`
 2. Распакуйте архив
 3. Откройте `Google Search Console Updater.app`
 
@@ -93,7 +93,9 @@ Scopes `webmasters` и `indexing` — чувствительные. Google, ск
 
 ## Автообновление
 
-Упакованное приложение при запуске проверяет [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). При наличии новой версии загружает `.zip` и предлагает перезапуск.
+Упакованное приложение при запуске проверяет [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). При наличии новой версии загружает `.zip` и показывает кнопку **«Установить и перезапустить»**. Также можно проверить обновления вручную через **О программе**.
+
+> На macOS без подписи Apple Developer автоустановка может не сработать. В этом случае нажмите **«Скачать вручную»** в баннере обновления или скачайте `.zip` из Releases и замените `.app`.
 
 ## Хранение данных
 

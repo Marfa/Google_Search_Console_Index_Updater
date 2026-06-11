@@ -4,7 +4,7 @@
 
 Portable macOS app that inspects URLs via the [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) and requests indexing for pages that are not in the Google index.
 
-**Version:** 1.0.1
+**Version:** 1.0.2
 
 **Source code:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
 
@@ -29,7 +29,7 @@ Portable macOS app that inspects URLs via the [Google Search Console URL Inspect
 
 The macOS (arm64) build is available in [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases):
 
-1. Download `Google-Search-Console-Updater-1.0.1-mac-arm64.zip`
+1. Download `Google-Search-Console-Updater-1.0.2-mac-arm64.zip`
 2. Unzip the archive
 3. Open `Google Search Console Updater.app`
 
@@ -93,7 +93,9 @@ Each user creates their own Google Cloud project, enters their Client ID / Secre
 
 ## Auto-update
 
-The packaged app checks [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) on startup. When a new version is available, it downloads the `.zip` and prompts for restart.
+The packaged app checks [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) on startup. When a new version is available, it downloads the `.zip` and shows an **Install and restart** button. You can also check manually from **About**.
+
+> On unsigned macOS builds, auto-install may fail. Use **Download manually** in the update banner, or download the `.zip` from Releases and replace the `.app`.
 
 ## Data storage
 

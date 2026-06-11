@@ -83,23 +83,45 @@ body {
   color: #fff;
 }
 
-.update-status {
+.update-banner {
   margin: 0 0 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 8px;
   font-size: 14px;
   background: #e8f0fe;
   color: #174ea6;
 }
 
-.update-status.success {
+.update-banner.success {
   background: #e6f4ea;
   color: var(--success);
 }
 
-.update-status.error {
+.update-banner.error {
   background: #fce8e6;
   color: var(--danger);
+}
+
+.update-banner p {
+  margin: 0 0 8px;
+}
+
+.update-banner p:last-child {
+  margin-bottom: 0;
+}
+
+.update-actions,
+.about-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.about-update-status {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .auth-status {

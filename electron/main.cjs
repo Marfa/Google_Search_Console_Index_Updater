@@ -3,7 +3,12 @@ const path = require('path');
 const auth = require('./auth.cjs');
 const api = require('./api.cjs');
 const settings = require('./settings.cjs');
-const { initAutoUpdater, installUpdate } = require('./updater.cjs');
+const {
+  initAutoUpdater,
+  checkForUpdates,
+  installUpdate,
+  openReleasePage,
+} = require('./updater.cjs');
 const { formatError } = require('./errors.cjs');
 const pkg = require('../package.json');
 
@@ -73,8 +78,20 @@ ipcMain.handle('settings:set-setup-collapsed', async (_event, collapsed) => {
   return saved.setupCollapsed;
 });
 
-ipcMain.handle('update:install', async () => {
-  installUpdate();
+ipcMain.handle('update:check', async () => {
+  try {
+    await checkForUpdates();
+    return { success: true };
+  } catch (error) {
+    throw new Error(formatError(error));
+  }
+});
+
+ipcMain.handle('update:install', async () => installUpdate());
+
+ipcMain.handle('update:open-release', async () => {
+  await openReleasePage();
+  return { success: true };
 });
 
 ipcMain.handle('auth:get-config', async () => {

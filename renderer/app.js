@@ -10,6 +10,7 @@ const state = {
   loggingIn: false,
   about: null,
   setupCollapsed: false,
+  updateStatus: null,
 };
 
 const elements = {
@@ -29,7 +30,14 @@ const elements = {
   aboutCryptoLink: document.getElementById('about-crypto-link'),
   langRu: document.getElementById('lang-ru'),
   langEn: document.getElementById('lang-en'),
+  updateBanner: document.getElementById('update-banner'),
   updateStatus: document.getElementById('update-status'),
+  updateActions: document.getElementById('update-actions'),
+  updateInstallBtn: document.getElementById('update-install-btn'),
+  updateDownloadBtn: document.getElementById('update-download-btn'),
+  aboutCheckUpdateBtn: document.getElementById('about-check-update-btn'),
+  aboutInstallUpdateBtn: document.getElementById('about-install-update-btn'),
+  aboutUpdateStatus: document.getElementById('about-update-status'),
   workCard: document.getElementById('work-card'),
   resultsCard: document.getElementById('results-card'),
   clientId: document.getElementById('client-id'),
@@ -315,21 +323,84 @@ function hideAboutModal() {
 async function initAbout() {
   state.about = await window.searchUpdater.getAbout();
   elements.aboutVersion.textContent = state.about.version;
-  elements.aboutSourceLink.textContent = state.about.sourceUrl;
-  elements.aboutDonateLink.textContent = state.about.donateUrl;
-  elements.aboutCryptoLink.textContent = state.about.cryptoDonateUrl;
 }
 
-function setUpdateStatus(message, type = '') {
-  if (!message) {
-    elements.updateStatus.classList.add('hidden');
-    elements.updateStatus.textContent = '';
-    return;
+function showUpdateActions(showInstall, showDownload = true) {
+  elements.updateActions.classList.toggle('hidden', !showInstall && !showDownload);
+  elements.updateInstallBtn.classList.toggle('hidden', !showInstall);
+  elements.updateDownloadBtn.classList.toggle('hidden', !showDownload);
+  elements.aboutInstallUpdateBtn.classList.toggle('hidden', !showInstall);
+}
+
+function handleUpdateStatus(status) {
+  state.updateStatus = status;
+
+  let message = '';
+  let type = 'info';
+  let showInstall = false;
+  let showDownload = false;
+
+  switch (status.status) {
+    case 'checking':
+      message = t('updateChecking');
+      break;
+    case 'available':
+      message = t('updateAvailable', { version: status.version });
+      showDownload = true;
+      break;
+    case 'downloading':
+      message = t('updateDownloading', { percent: status.percent || 0 });
+      showDownload = true;
+      break;
+    case 'ready':
+      message = t('updateReady', { version: status.version });
+      type = 'success';
+      showInstall = true;
+      showDownload = true;
+      break;
+    case 'none':
+      message = t('updateNone', { version: status.version || state.about?.version || '' });
+      type = 'success';
+      break;
+    case 'error':
+      message = status.message
+        ? `${t('updateError')} ${status.message}`
+        : t('updateError');
+      type = 'error';
+      showDownload = true;
+      break;
+    case 'dev':
+      return;
+    default:
+      return;
   }
 
-  elements.updateStatus.textContent = message;
-  elements.updateStatus.className = `update-status ${type}`.trim();
-  elements.updateStatus.classList.remove('hidden');
+  if (status.status === 'none') {
+    elements.updateBanner.classList.add('hidden');
+  } else {
+    elements.updateBanner.classList.remove('hidden');
+    elements.updateStatus.textContent = message;
+    elements.updateBanner.className = `update-banner ${type}`.trim();
+  }
+
+  showUpdateActions(showInstall, showDownload);
+  elements.aboutUpdateStatus.textContent =
+    status.status === 'ready' || status.status === 'error' ? t('updateManualHint') : message;
+}
+
+async function installUpdateNow() {
+  await window.searchUpdater.installUpdate();
+}
+
+async function checkUpdatesNow() {
+  try {
+    await window.searchUpdater.checkForUpdates();
+  } catch (error) {
+    handleUpdateStatus({
+      status: 'error',
+      message: formatError(error),
+    });
+  }
 }
 
 async function switchLocale(locale) {
@@ -506,29 +577,20 @@ elements.processBtn.addEventListener('click', async () => {
 });
 
 elements.exportBtn.addEventListener('click', exportCsv);
-elements.aboutBtn.addEventListener('click', showAboutModal);
+elements.aboutBtn.addEventListener('click', () => {
+  if (state.updateStatus) {
+    handleUpdateStatus(state.updateStatus);
+  }
+  showAboutModal();
+});
 elements.aboutCloseBtn.addEventListener('click', hideAboutModal);
 elements.aboutBackdrop.addEventListener('click', hideAboutModal);
 
-elements.aboutSourceLink.addEventListener('click', async (event) => {
-  event.preventDefault();
-  if (state.about?.sourceUrl) {
-    await window.searchUpdater.openExternal(state.about.sourceUrl);
-  }
-});
-
-elements.aboutDonateLink.addEventListener('click', async (event) => {
-  event.preventDefault();
-  if (state.about?.donateUrl) {
-    await window.searchUpdater.openExternal(state.about.donateUrl);
-  }
-});
-
-elements.aboutCryptoLink.addEventListener('click', async (event) => {
-  event.preventDefault();
-  if (state.about?.cryptoDonateUrl) {
-    await window.searchUpdater.openExternal(state.about.cryptoDonateUrl);
-  }
+elements.aboutCheckUpdateBtn.addEventListener('click', checkUpdatesNow);
+elements.aboutInstallUpdateBtn.addEventListener('click', installUpdateNow);
+elements.updateInstallBtn.addEventListener('click', installUpdateNow);
+elements.updateDownloadBtn.addEventListener('click', async () => {
+  await window.searchUpdater.openReleasePage();
 });
 
 elements.langRu.addEventListener('click', () => switchLocale('ru'));
@@ -566,26 +628,6 @@ window.searchUpdater.onProgress((progress) => {
   elements.progressText.textContent = progressMessage(progress);
 });
 
-window.searchUpdater.onUpdateStatus((status) => {
-  switch (status.status) {
-    case 'checking':
-      setUpdateStatus(t('updateChecking'), 'info');
-      break;
-    case 'available':
-      setUpdateStatus(t('updateAvailable', { version: status.version }), 'info');
-      break;
-    case 'ready':
-      setUpdateStatus(t('updateReady'), 'success');
-      break;
-    case 'none':
-      setUpdateStatus('', '');
-      break;
-    case 'error':
-      setUpdateStatus(t('updateError'), 'error');
-      break;
-    default:
-      break;
-  }
-});
+window.searchUpdater.onUpdateStatus(handleUpdateStatus);
 
 loadInitialState();

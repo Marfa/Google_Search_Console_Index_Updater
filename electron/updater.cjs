@@ -1,61 +1,111 @@
 const { autoUpdater } = require('electron-updater');
-const { app } = require('electron');
+const { app, shell } = require('electron');
 
-function sendToWindow(mainWindow, channel, payload) {
+const RELEASE_PAGE_URL =
+  'https://github.com/Marfa/Google_Search_Console_Index_Updater/releases/latest';
+
+let mainWindow = null;
+
+function sendToWindow(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload);
   }
 }
 
-function initAutoUpdater(mainWindow) {
+function initAutoUpdater(window) {
+  mainWindow = window;
+
   autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.disableDifferentialDownload = true;
 
   if (!app.isPackaged) {
     return;
   }
 
   autoUpdater.on('checking-for-update', () => {
-    sendToWindow(mainWindow, 'update:status', { status: 'checking' });
+    sendToWindow('update:status', { status: 'checking' });
   });
 
   autoUpdater.on('update-available', (info) => {
-    sendToWindow(mainWindow, 'update:status', {
+    sendToWindow('update:status', {
       status: 'available',
       version: info.version,
+      releasePageUrl: RELEASE_PAGE_URL,
     });
   });
 
-  autoUpdater.on('update-not-available', () => {
-    sendToWindow(mainWindow, 'update:status', { status: 'none' });
+  autoUpdater.on('update-not-available', (info) => {
+    sendToWindow('update:status', {
+      status: 'none',
+      version: info?.version || app.getVersion(),
+    });
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    sendToWindow('update:status', {
+      status: 'downloading',
+      percent: Math.round(progress.percent),
+    });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    sendToWindow(mainWindow, 'update:status', {
+    sendToWindow('update:status', {
       status: 'ready',
       version: info.version,
+      releasePageUrl: RELEASE_PAGE_URL,
     });
   });
 
   autoUpdater.on('error', (error) => {
-    sendToWindow(mainWindow, 'update:status', {
+    sendToWindow('update:status', {
       status: 'error',
-      message: error.message,
+      message: error?.message || 'Unknown update error',
+      releasePageUrl: RELEASE_PAGE_URL,
     });
   });
 
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {
-      sendToWindow(mainWindow, 'update:status', { status: 'error' });
+    checkForUpdates().catch(() => {
+      sendToWindow('update:status', {
+        status: 'error',
+        releasePageUrl: RELEASE_PAGE_URL,
+      });
     });
   }, 3000);
 }
 
+async function checkForUpdates() {
+  if (!app.isPackaged) {
+    sendToWindow('update:status', { status: 'dev' });
+    return null;
+  }
+
+  return autoUpdater.checkForUpdates();
+}
+
 function installUpdate() {
-  autoUpdater.quitAndInstall();
+  if (!app.isPackaged) {
+    return { success: false };
+  }
+
+  try {
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true };
+  } catch (error) {
+    shell.openExternal(RELEASE_PAGE_URL);
+    return { success: false, openedBrowser: true, message: error.message };
+  }
+}
+
+function openReleasePage() {
+  return shell.openExternal(RELEASE_PAGE_URL);
 }
 
 module.exports = {
+  RELEASE_PAGE_URL,
   initAutoUpdater,
+  checkForUpdates,
   installUpdate,
+  openReleasePage,
 };

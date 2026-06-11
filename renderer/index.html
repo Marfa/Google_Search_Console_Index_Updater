@@ -28,7 +28,13 @@
         </div>
       </header>
 
-      <p class="update-status hidden" id="update-status"></p>
+      <div class="update-banner hidden" id="update-banner">
+        <p id="update-status"></p>
+        <div class="update-actions hidden" id="update-actions">
+          <button class="btn btn-primary" id="update-install-btn" type="button" data-i18n="installUpdate">Установить и перезапустить</button>
+          <button class="btn btn-secondary" id="update-download-btn" type="button" data-i18n="downloadManually">Скачать вручную</button>
+        </div>
+      </div>
 
       <section class="card" id="setup-card">
         <div class="card-header">
@@ -124,19 +130,24 @@
       <div class="modal-backdrop" id="about-backdrop"></div>
       <div class="modal-card">
         <h2 data-i18n="aboutTitle">О программе</h2>
-        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.1</span></p>
+        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.2</span></p>
         <p>
           <strong data-i18n="aboutSource">Исходный код</strong>:
-          <a href="#" id="about-source-link">GitHub</a>
+          <a href="https://github.com/Marfa/Google_Search_Console_Index_Updater" id="about-source-link">GitHub</a>
         </p>
         <p>
           <strong data-i18n="aboutDonate">Донат</strong>:
-          <a href="#" id="about-donate-link">DonationAlerts</a>
+          <a href="https://www.donationalerts.com/r/themarfa" id="about-donate-link">DonationAlerts</a>
         </p>
         <p>
           <strong data-i18n="aboutDonateCrypto">Донат криптой</strong>:
-          <a href="#" id="about-crypto-link">NOWPayments</a>
+          <a href="https://nowpayments.io/donation/themarfa" id="about-crypto-link">NOWPayments</a>
         </p>
+        <div class="about-actions">
+          <button class="btn btn-secondary" id="about-check-update-btn" type="button" data-i18n="checkUpdates">Проверить обновления</button>
+          <button class="btn btn-primary hidden" id="about-install-update-btn" type="button" data-i18n="installUpdate">Установить и перезапустить</button>
+        </div>
+        <p class="about-update-status" id="about-update-status"></p>
         <button class="btn btn-primary" id="about-close-btn" type="button" data-i18n="aboutClose">Закрыть</button>
       </div>
     </div>
