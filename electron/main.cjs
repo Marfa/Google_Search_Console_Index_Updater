@@ -59,11 +59,18 @@ ipcMain.handle('app:get-about', async () => ({
   cryptoDonateUrl: 'https://nowpayments.io/donation/themarfa',
 }));
 
+ipcMain.handle('settings:get', async () => settings.loadSettings());
+
 ipcMain.handle('settings:get-locale', async () => settings.loadSettings().locale);
 
 ipcMain.handle('settings:set-locale', async (_event, locale) => {
   const saved = settings.saveSettings({ locale });
   return saved.locale;
+});
+
+ipcMain.handle('settings:set-setup-collapsed', async (_event, collapsed) => {
+  const saved = settings.saveSettings({ setupCollapsed: Boolean(collapsed) });
+  return saved.setupCollapsed;
 });
 
 ipcMain.handle('update:install', async () => {

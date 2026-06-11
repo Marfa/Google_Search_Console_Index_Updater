@@ -3,8 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('searchUpdater', {
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   getAbout: () => ipcRenderer.invoke('app:get-about'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
   getLocale: () => ipcRenderer.invoke('settings:get-locale'),
   setLocale: (locale) => ipcRenderer.invoke('settings:set-locale', locale),
+  setSetupCollapsed: (collapsed) => ipcRenderer.invoke('settings:set-setup-collapsed', collapsed),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   getAuthConfig: () => ipcRenderer.invoke('auth:get-config'),
   saveAuthConfig: (config) => ipcRenderer.invoke('auth:save-config', config),

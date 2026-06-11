@@ -11,7 +11,7 @@ function getSettingsPath() {
 function loadSettings() {
   const settingsPath = getSettingsPath();
   if (!fs.existsSync(settingsPath)) {
-    return { locale: 'ru' };
+    return { locale: 'ru', setupCollapsed: false };
   }
 
   try {
@@ -19,9 +19,12 @@ function loadSettings() {
     if (!SUPPORTED_LOCALES.includes(settings.locale)) {
       settings.locale = 'ru';
     }
+    if (typeof settings.setupCollapsed !== 'boolean') {
+      settings.setupCollapsed = false;
+    }
     return settings;
   } catch {
-    return { locale: 'ru' };
+    return { locale: 'ru', setupCollapsed: false };
   }
 }
 

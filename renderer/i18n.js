@@ -10,6 +10,9 @@ const TRANSLATIONS = {
     about: 'О программе',
     language: 'Язык',
     setupTitle: 'Настройка OAuth',
+    hideSetup: 'Скрыть',
+    showSetup: 'Показать',
+    invalidUrls: 'В списке есть строки, которые не являются URL',
     setupHint: 'Для работы приложения нужны OAuth-учётные данные из Google Cloud Console.',
     setupLink: 'Инструкция по настройке',
     accessDeniedNotice: 'Ошибка access_denied: добавьте свой Google-email в Google Auth Platform → Audience → Test users.',
@@ -88,6 +91,9 @@ const TRANSLATIONS = {
     about: 'About',
     language: 'Language',
     setupTitle: 'OAuth setup',
+    hideSetup: 'Hide',
+    showSetup: 'Show',
+    invalidUrls: 'Some lines in the list are not valid URLs',
     setupHint: 'The app requires OAuth credentials from Google Cloud Console.',
     setupLink: 'Setup guide',
     accessDeniedNotice: 'access_denied error: add your Google email to Google Auth Platform → Audience → Test users.',
@@ -184,6 +190,10 @@ function getLocale() {
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     const key = element.dataset.i18n;
+    if (element.id === 'toggle-setup-btn' && element.dataset.collapsed === 'true') {
+      element.textContent = t('showSetup');
+      return;
+    }
     element.textContent = t(key);
   });
 

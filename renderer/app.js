@@ -9,9 +9,12 @@ const state = {
   processing: false,
   loggingIn: false,
   about: null,
+  setupCollapsed: false,
 };
 
 const elements = {
+  setupCard: document.getElementById('setup-card'),
+  toggleSetupBtn: document.getElementById('toggle-setup-btn'),
   authStatus: document.getElementById('auth-status'),
   loginBtn: document.getElementById('login-btn'),
   cancelLoginBtn: document.getElementById('cancel-login-btn'),
@@ -36,6 +39,7 @@ const elements = {
   configMessage: document.getElementById('config-message'),
   siteSelect: document.getElementById('site-select'),
   urlsInput: document.getElementById('urls-input'),
+  urlsError: document.getElementById('urls-error'),
   processBtn: document.getElementById('process-btn'),
   progressPanel: document.getElementById('progress-panel'),
   progressFill: document.getElementById('progress-fill'),
@@ -56,6 +60,54 @@ function setConfigMessage(text, type = '') {
 
 function formatError(error) {
   return error?.message || String(error);
+}
+
+function isValidUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function parseUrlList(rawValue) {
+  const lines = rawValue
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const invalidLines = lines.filter((line) => !isValidUrl(line));
+
+  return {
+    lines,
+    invalidLines,
+    isEmpty: lines.length === 0,
+    hasInvalid: invalidLines.length > 0,
+  };
+}
+
+function updateUrlInputState() {
+  const { isEmpty, hasInvalid } = parseUrlList(elements.urlsInput.value);
+
+  elements.urlsInput.classList.toggle('invalid', hasInvalid);
+  elements.urlsError.classList.toggle('hidden', !hasInvalid);
+  elements.processBtn.disabled = isEmpty || hasInvalid || state.processing;
+
+  return { isEmpty, hasInvalid };
+}
+
+function updateSetupCollapsedUi(collapsed) {
+  state.setupCollapsed = collapsed;
+  elements.setupCard.classList.toggle('collapsed', collapsed);
+  elements.toggleSetupBtn.dataset.collapsed = collapsed ? 'true' : 'false';
+  elements.toggleSetupBtn.textContent = collapsed ? t('showSetup') : t('hideSetup');
+  elements.toggleSetupBtn.setAttribute('data-i18n', collapsed ? 'showSetup' : 'hideSetup');
+}
+
+async function setSetupCollapsed(collapsed) {
+  updateSetupCollapsedUi(collapsed);
+  await window.searchUpdater.setSetupCollapsed(collapsed);
 }
 
 function setLoginInProgress(inProgress) {
@@ -283,12 +335,15 @@ function setUpdateStatus(message, type = '') {
 async function switchLocale(locale) {
   await window.searchUpdater.setLocale(locale);
   setLocale(locale);
+  applyTranslations();
+  updateSetupCollapsedUi(state.setupCollapsed);
   updateAuthUi({
     authenticated: state.authenticated,
     email: state.userEmail,
     name: state.userName,
   });
   renderSites();
+  updateUrlInputState();
   if (state.results.length > 0) {
     renderResults(state.results);
   }
@@ -308,10 +363,12 @@ async function loadSites() {
 }
 
 async function loadInitialState() {
-  const locale = await window.searchUpdater.getLocale();
-  setLocale(locale);
+  const appSettings = await window.searchUpdater.getSettings();
+  setLocale(appSettings.locale || 'ru');
   applyTranslations();
+  updateSetupCollapsedUi(Boolean(appSettings.setupCollapsed));
   await initAbout();
+  updateUrlInputState();
 
   const config = await window.searchUpdater.getAuthConfig();
   applyAuthConfig(config);
@@ -390,23 +447,32 @@ elements.logoutBtn.addEventListener('click', async () => {
   setConfigMessage(t('logoutDone'), '');
 });
 
+elements.urlsInput.addEventListener('input', updateUrlInputState);
+
+elements.toggleSetupBtn.addEventListener('click', async () => {
+  await setSetupCollapsed(!state.setupCollapsed);
+});
+
 elements.processBtn.addEventListener('click', async () => {
   if (state.processing) {
     return;
   }
 
-  const urls = elements.urlsInput.value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const { lines: urls, isEmpty, hasInvalid } = parseUrlList(elements.urlsInput.value);
 
-  if (urls.length === 0) {
+  if (isEmpty) {
     setConfigMessage(t('addUrl'), 'error');
+    updateUrlInputState();
+    return;
+  }
+
+  if (hasInvalid) {
+    updateUrlInputState();
     return;
   }
 
   state.processing = true;
-  elements.processBtn.disabled = true;
+  updateUrlInputState();
   elements.resultsCard.classList.add('hidden');
   elements.progressPanel.classList.remove('hidden');
   elements.progressFill.style.width = '0%';
@@ -435,7 +501,7 @@ elements.processBtn.addEventListener('click', async () => {
     elements.progressText.textContent = message;
   } finally {
     state.processing = false;
-    elements.processBtn.disabled = false;
+    updateUrlInputState();
   }
 });
 

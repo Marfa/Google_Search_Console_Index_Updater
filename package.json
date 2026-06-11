@@ -1,6 +1,6 @@
 {
   "name": "google-search-console-updater",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Portable app for Google Search Console URL inspection and indexing requests",
   "main": "electron/main.cjs",
   "author": "Marfa",

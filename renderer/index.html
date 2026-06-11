@@ -31,7 +31,11 @@
       <p class="update-status hidden" id="update-status"></p>
 
       <section class="card" id="setup-card">
-        <h2 data-i18n="setupTitle">Настройка OAuth</h2>
+        <div class="card-header">
+          <h2 data-i18n="setupTitle">Настройка OAuth</h2>
+          <button class="btn btn-ghost" id="toggle-setup-btn" type="button" data-i18n="hideSetup">Скрыть</button>
+        </div>
+        <div id="setup-card-body">
         <p class="hint">
           <span data-i18n="setupHint">Для работы приложения нужны OAuth-учётные данные из Google Cloud Console.</span>
           <a href="#" id="setup-link" data-i18n="setupLink">Инструкция по настройке</a>
@@ -61,6 +65,7 @@
           <button class="btn btn-danger" id="reset-config-btn" type="button" data-i18n="resetSettings">Сбросить настройки</button>
         </div>
         <p class="status-message" id="config-message"></p>
+        </div>
       </section>
 
       <section class="card hidden" id="work-card">
@@ -75,7 +80,8 @@
 
         <label class="field">
           <span data-i18n="urlList">Список URL (по одному на строку)</span>
-          <textarea id="urls-input" rows="10" data-i18n-placeholder="urlPlaceholder"></textarea>
+          <textarea id="urls-input" class="urls-input" rows="10" spellcheck="false" data-i18n-placeholder="urlPlaceholder"></textarea>
+          <span class="field-hint hidden" id="urls-error" data-i18n="invalidUrls">В списке есть строки, которые не являются URL</span>
         </label>
 
         <div class="actions">
@@ -118,7 +124,7 @@
       <div class="modal-backdrop" id="about-backdrop"></div>
       <div class="modal-card">
         <h2 data-i18n="aboutTitle">О программе</h2>
-        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.0</span></p>
+        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.1</span></p>
         <p>
           <strong data-i18n="aboutSource">Исходный код</strong>:
           <a href="#" id="about-source-link">GitHub</a>

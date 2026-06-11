@@ -4,13 +4,17 @@
 
 Portable-приложение для macOS. Проверяет URL через [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) и запрашивает индексирование для страниц, которых нет в индексе.
 
-**Версия:** 1.0.0
+**Версия:** 1.0.1
 
 **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
 
 **Лицензия:** [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 > Проект распространяется по лицензии CC BY-NC-SA 4.0. Коммерческое использование без отдельного согласования не допускается.
+
+## Скриншот
+
+![Google Search Console Updater](docs/screenshot.png)
 
 ## Возможности
 
@@ -25,7 +29,7 @@ Portable-приложение для macOS. Проверяет URL через [G
 
 Готовая сборка для macOS (arm64) доступна в [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases):
 
-1. Скачайте `Google-Search-Console-Updater-1.0.0-mac-arm64.zip`
+1. Скачайте `Google-Search-Console-Updater-1.0.1-mac-arm64.zip`
 2. Распакуйте архив
 3. Откройте `Google Search Console Updater.app`
 
