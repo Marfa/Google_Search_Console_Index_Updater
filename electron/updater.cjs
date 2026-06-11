@@ -38,7 +38,8 @@ function initAutoUpdater(window) {
   autoUpdater.on('update-not-available', (info) => {
     sendToWindow('update:status', {
       status: 'none',
-      version: info?.version || app.getVersion(),
+      installedVersion: app.getVersion(),
+      latestVersion: info?.version || app.getVersion(),
     });
   });
 

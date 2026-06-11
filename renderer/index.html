@@ -18,7 +18,6 @@
             <button class="lang-btn active" id="lang-ru" type="button">RU</button>
             <button class="lang-btn" id="lang-en" type="button">EN</button>
           </div>
-          <button class="btn btn-secondary" id="about-btn" type="button" data-i18n="about">О программе</button>
           <div class="auth-panel" id="auth-panel">
             <span class="auth-status" id="auth-status" data-i18n="authNotSignedIn">Не авторизован</span>
             <button class="btn btn-primary" id="login-btn" type="button" data-i18n="login">Войти в Google</button>
@@ -27,14 +26,6 @@
           </div>
         </div>
       </header>
-
-      <div class="update-banner hidden" id="update-banner">
-        <p id="update-status"></p>
-        <div class="update-actions hidden" id="update-actions">
-          <button class="btn btn-primary" id="update-install-btn" type="button" data-i18n="installUpdate">Установить и перезапустить</button>
-          <button class="btn btn-secondary" id="update-download-btn" type="button" data-i18n="downloadManually">Скачать вручную</button>
-        </div>
-      </div>
 
       <section class="card" id="setup-card">
         <div class="card-header">
@@ -126,11 +117,21 @@
       </section>
     </div>
 
+    <div class="update-banner" id="update-banner">
+      <p id="update-status"></p>
+      <div class="update-actions hidden" id="update-actions">
+        <button class="btn btn-primary" id="update-install-btn" type="button" data-i18n="installUpdate">Установить и перезапустить</button>
+        <button class="btn btn-secondary" id="update-download-btn" type="button" data-i18n="downloadManually">Скачать вручную</button>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary about-fab" id="about-btn" type="button" data-i18n="about">О программе</button>
+
     <div class="modal hidden" id="about-modal" role="dialog" aria-modal="true">
       <div class="modal-backdrop" id="about-backdrop"></div>
       <div class="modal-card">
         <h2 data-i18n="aboutTitle">О программе</h2>
-        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.2</span></p>
+        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.5</span></p>
         <p>
           <strong data-i18n="aboutSource">Исходный код</strong>:
           <a href="https://github.com/Marfa/Google_Search_Console_Index_Updater" id="about-source-link">GitHub</a>

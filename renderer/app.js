@@ -79,6 +79,35 @@ function isValidUrl(value) {
   }
 }
 
+function isValidClientId(value) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  return /^[\w.-]+\.apps\.googleusercontent\.com$/.test(trimmed);
+}
+
+function isValidClientSecret(value) {
+  return value.trim().length > 0;
+}
+
+function updateOAuthInputState({ showEmptyErrors = false } = {}) {
+  const clientIdValue = elements.clientId.value;
+  const clientSecretValue = elements.clientSecret.value;
+  const clientIdEmpty = !clientIdValue.trim();
+  const clientSecretEmpty = !clientSecretValue.trim();
+
+  elements.clientId.classList.toggle(
+    'invalid',
+    (showEmptyErrors && clientIdEmpty) || (!clientIdEmpty && !isValidClientId(clientIdValue))
+  );
+  elements.clientSecret.classList.toggle(
+    'invalid',
+    (showEmptyErrors && clientSecretEmpty) ||
+      (!clientSecretEmpty && !isValidClientSecret(clientSecretValue))
+  );
+}
+
 function parseUrlList(rawValue) {
   const lines = rawValue
     .split('\n')
@@ -303,6 +332,7 @@ function applyAuthConfig(config) {
   if (config.clientSecret) {
     elements.clientSecret.value = config.clientSecret;
   }
+  updateOAuthInputState();
 }
 
 function progressMessage(progress) {
@@ -332,6 +362,14 @@ function showUpdateActions(showInstall, showDownload = true) {
   elements.aboutInstallUpdateBtn.classList.toggle('hidden', !showInstall);
 }
 
+function setUpdateBannerVisible(visible) {
+  elements.updateBanner.classList.toggle('visible', visible);
+}
+
+function getInstalledVersion() {
+  return state.about?.version || '';
+}
+
 function handleUpdateStatus(status) {
   state.updateStatus = status;
 
@@ -359,7 +397,7 @@ function handleUpdateStatus(status) {
       showDownload = true;
       break;
     case 'none':
-      message = t('updateNone', { version: status.version || state.about?.version || '' });
+      message = t('updateNone', { version: status.installedVersion || getInstalledVersion() });
       type = 'success';
       break;
     case 'error':
@@ -376,11 +414,11 @@ function handleUpdateStatus(status) {
   }
 
   if (status.status === 'none') {
-    elements.updateBanner.classList.add('hidden');
+    setUpdateBannerVisible(false);
   } else {
-    elements.updateBanner.classList.remove('hidden');
     elements.updateStatus.textContent = message;
     elements.updateBanner.className = `update-banner ${type}`.trim();
+    setUpdateBannerVisible(true);
   }
 
   showUpdateActions(showInstall, showDownload);
@@ -460,6 +498,7 @@ elements.resetConfigBtn.addEventListener('click', async () => {
   await window.searchUpdater.resetAuthConfig();
   elements.clientId.value = '';
   elements.clientSecret.value = '';
+  updateOAuthInputState();
   state.sites = [];
   renderSites();
   state.userEmail = '';
@@ -468,7 +507,18 @@ elements.resetConfigBtn.addEventListener('click', async () => {
   setConfigMessage(t('settingsReset'), 'success');
 });
 
+elements.clientId.addEventListener('input', updateOAuthInputState);
+elements.clientSecret.addEventListener('input', updateOAuthInputState);
+
 elements.saveConfigBtn.addEventListener('click', async () => {
+  updateOAuthInputState({ showEmptyErrors: true });
+  if (
+    !isValidClientId(elements.clientId.value) ||
+    !isValidClientSecret(elements.clientSecret.value)
+  ) {
+    return;
+  }
+
   try {
     const result = await window.searchUpdater.saveAuthConfig({
       clientId: elements.clientId.value,

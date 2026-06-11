@@ -1,3 +1,4 @@
+(() => {
 const TRANSLATIONS = {
   ru: {
     appTitle: 'Google Search Console Updater',
@@ -231,3 +232,4 @@ window.i18n = {
   getLocale,
   applyTranslations,
 };
+})();

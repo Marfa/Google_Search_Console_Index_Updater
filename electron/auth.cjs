@@ -268,7 +268,6 @@ async function getUserInfo(client) {
 
 module.exports = {
   SCOPES,
-  OAUTH_BRANDING_URL,
   loadOAuthConfig,
   saveOAuthConfig,
   getAuthenticatedClient,
