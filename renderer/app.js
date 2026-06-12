@@ -59,6 +59,10 @@ const elements = {
   testUsersLink: document.getElementById('test-users-link'),
   enableSearchConsoleApi: document.getElementById('enable-search-console-api'),
   enableIndexingApi: document.getElementById('enable-indexing-api'),
+  winTitlebar: document.getElementById('win-titlebar'),
+  winMinimize: document.getElementById('win-minimize'),
+  winMaximize: document.getElementById('win-maximize'),
+  winClose: document.getElementById('win-close'),
 };
 
 function setConfigMessage(text, type = '') {
@@ -222,12 +226,14 @@ function updateAuthUi(auth) {
 
   if (auth.authenticated) {
     elements.authStatus.textContent = state.userEmail || state.userName || t('authSignedIn');
+    elements.authStatus.classList.remove('hidden');
     elements.loginBtn.classList.add('hidden');
     elements.cancelLoginBtn.classList.add('hidden');
     elements.logoutBtn.classList.remove('hidden');
     elements.workCard.classList.remove('hidden');
   } else {
-    elements.authStatus.textContent = t('authNotSignedIn');
+    elements.authStatus.textContent = '';
+    elements.authStatus.classList.add('hidden');
     if (!state.loggingIn) {
       elements.loginBtn.classList.remove('hidden');
       elements.loginBtn.disabled = false;
@@ -297,6 +303,7 @@ function renderResults(results) {
     .join('');
 
   elements.resultsCard.classList.remove('hidden');
+  elements.resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function exportCsv() {
@@ -362,8 +369,22 @@ function showUpdateActions(showInstall, showDownload = true) {
   elements.aboutInstallUpdateBtn.classList.toggle('hidden', !showInstall);
 }
 
+function syncUpdateBannerOffset() {
+  const visible = elements.updateBanner.classList.contains('visible');
+  document.body.classList.toggle('update-banner-visible', visible);
+
+  if (!visible) {
+    document.documentElement.style.setProperty('--update-banner-height', '0px');
+    return;
+  }
+
+  const height = Math.ceil(elements.updateBanner.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--update-banner-height', `${height}px`);
+}
+
 function setUpdateBannerVisible(visible) {
   elements.updateBanner.classList.toggle('visible', visible);
+  requestAnimationFrame(syncUpdateBannerOffset);
 }
 
 function getInstalledVersion() {
@@ -432,6 +453,7 @@ function handleUpdateStatus(status) {
   }
 
   showUpdateActions(showInstall, showDownload);
+  requestAnimationFrame(syncUpdateBannerOffset);
   if (status.status === 'ready' || status.status === 'error') {
     elements.aboutUpdateStatus.textContent = status.manualInstallRequired
       ? t('updateManualHint')
@@ -494,7 +516,52 @@ async function loadSites() {
   }
 }
 
+function updateMaximizeButton(maximized) {
+  if (!elements.winMaximize) {
+    return;
+  }
+
+  elements.winMaximize.textContent = maximized ? '\u2750' : '\u25A1';
+  elements.winMaximize.setAttribute('aria-label', maximized ? 'Restore' : 'Maximize');
+}
+
+async function initWindowsTitlebar() {
+  const platform = await window.searchUpdater.getPlatform();
+  if (platform !== 'win32' || !elements.winTitlebar) {
+    return;
+  }
+
+  document.body.classList.add('platform-win32');
+  elements.winTitlebar.classList.remove('hidden');
+
+  elements.winMinimize?.addEventListener('click', () => {
+    window.searchUpdater.minimizeWindow();
+  });
+
+  elements.winMaximize?.addEventListener('click', () => {
+    window.searchUpdater.maximizeWindow().then((result) => {
+      updateMaximizeButton(Boolean(result?.maximized));
+    });
+  });
+
+  elements.winClose?.addEventListener('click', () => {
+    window.searchUpdater.closeWindow();
+  });
+
+  elements.winTitlebar.addEventListener('dblclick', () => {
+    window.searchUpdater.maximizeWindow().then((result) => {
+      updateMaximizeButton(Boolean(result?.maximized));
+    });
+  });
+
+  window.searchUpdater.onWindowMaximizeChange(updateMaximizeButton);
+  const maximized = await window.searchUpdater.isWindowMaximized();
+  updateMaximizeButton(maximized);
+}
+
 async function loadInitialState() {
+  await initWindowsTitlebar();
+
   const appSettings = await window.searchUpdater.getSettings();
   setLocale(appSettings.locale || 'ru');
   applyTranslations();
@@ -629,6 +696,7 @@ elements.processBtn.addEventListener('click', async () => {
       siteUrl: elements.siteSelect.value || null,
     });
     renderResults(results);
+    elements.progressPanel.classList.add('hidden');
     elements.progressFill.style.width = '100%';
     elements.progressText.textContent = t('processingDone');
 

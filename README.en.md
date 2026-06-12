@@ -2,9 +2,7 @@
 
 > **Русский:** [README.md](README.md)
 
-Portable macOS app that inspects URLs via the [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) and requests indexing for pages that are not in the Google index.
-
-**Version:** 1.0.2
+Portable app for **Windows** and **macOS** that inspects URLs via the [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) and requests indexing for pages that are not in the Google index.
 
 **Source code:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
 
@@ -27,9 +25,19 @@ Portable macOS app that inspects URLs via the [Google Search Console URL Inspect
 
 ## Download
 
-The macOS (arm64) build is available in [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases):
+Portable builds are available in [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). See the release page for the current file names.
 
-1. Download `Google-Search-Console-Updater-1.0.2-mac-arm64.zip`
+### Windows (x64)
+
+1. Download `Google-Search-Console-Updater-<version>-win-x64.zip`
+2. Unzip the archive
+3. Run `Google Search Console Updater.exe` from the extracted folder
+
+No installation required.
+
+### macOS (Apple Silicon, arm64)
+
+1. Download `Google-Search-Console-Updater-<version>-mac-arm64.zip`
 2. Unzip the archive
 3. Open `Google Search Console Updater.app`
 
@@ -95,24 +103,25 @@ Each user creates their own Google Cloud project, enters their Client ID / Secre
 
 The packaged app checks [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) on startup. When a new version is available, it downloads the `.zip` and shows an **Install and restart** button. You can also check manually from **About**.
 
-> On unsigned macOS builds, auto-install may fail. Use **Download manually** in the update banner, or download the `.zip` from Releases and replace the `.app`.
+> On unsigned macOS builds, auto-install may fail. Use **Download manually** in the update banner, or download the `.zip` from Releases and replace the `.app`. On Windows, download the new `.zip`, unzip it, and replace the app folder.
 
 ## Data storage
 
 Credentials are **not stored in source code**. Locally on the user's device:
 
-| Data | Path (macOS) |
-|------|----------------|
-| OAuth Client ID / Secret | `~/Library/Application Support/Google Search Console Updater/oauth-config.json` |
-| Auth tokens | `~/Library/Application Support/Google Search Console Updater/tokens.json` |
-| UI language | `~/Library/Application Support/Google Search Console Updater/settings.json` |
+| Data | Path (Windows) | Path (macOS) |
+|------|----------------|--------------|
+| OAuth Client ID / Secret | `%APPDATA%\Google Search Console Updater\oauth-config.json` | `~/Library/Application Support/Google Search Console Updater/oauth-config.json` |
+| Auth tokens | `%APPDATA%\Google Search Console Updater\tokens.json` | `~/Library/Application Support/Google Search Console Updater/tokens.json` |
+| UI language | `%APPDATA%\Google Search Console Updater\settings.json` | `~/Library/Application Support/Google Search Console Updater/settings.json` |
 
 ## Build from source
 
 ```bash
 npm install
 npm start
-npm run build:mac
+npm run build:mac   # macOS (arm64)
+npm run build:win   # Windows (x64)
 ```
 
 Artifacts are written to `dist/`.

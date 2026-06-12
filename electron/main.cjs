@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
 const auth = require('./auth.cjs');
 const api = require('./api.cjs');
@@ -13,16 +13,37 @@ const { formatError } = require('./errors.cjs');
 const pkg = require('../package.json');
 
 const APP_TITLE = 'Google Search Console Updater';
+const APP_BACKGROUND = '#f4f6f8';
 
 let mainWindow = null;
 
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+}
+
+function getAppIconPath() {
+  return path.join(__dirname, '..', 'build', 'icon.png');
+}
+
 function createWindow() {
+  const iconPath = getAppIconPath();
+
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 800,
     minWidth: 900,
     minHeight: 650,
     title: APP_TITLE,
+    icon: iconPath,
+    backgroundColor: APP_BACKGROUND,
+    ...(process.platform === 'win32'
+      ? {
+          frame: false,
+          thickFrame: false,
+          hasShadow: false,
+          backgroundMaterial: 'none',
+        }
+      : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -36,10 +57,27 @@ function createWindow() {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
+  if (process.platform === 'win32') {
+    mainWindow.on('maximize', () => {
+      mainWindow.webContents.send('window:maximize-changed', true);
+    });
+    mainWindow.on('unmaximize', () => {
+      mainWindow.webContents.send('window:maximize-changed', false);
+    });
+  }
+
   initAutoUpdater(mainWindow);
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    Menu.setApplicationMenu(null);
+  }
+
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(getAppIconPath());
+  }
+
   createWindow();
 
   app.on('activate', () => {
@@ -63,6 +101,32 @@ ipcMain.handle('app:get-about', async () => ({
   donateUrl: 'https://www.donationalerts.com/r/themarfa',
   cryptoDonateUrl: 'https://nowpayments.io/donation/themarfa',
 }));
+
+ipcMain.handle('app:get-platform', async () => process.platform);
+
+ipcMain.handle('window:minimize', async () => {
+  mainWindow?.minimize();
+});
+
+ipcMain.handle('window:maximize', async () => {
+  if (!mainWindow) {
+    return { maximized: false };
+  }
+
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+
+  return { maximized: mainWindow.isMaximized() };
+});
+
+ipcMain.handle('window:close', async () => {
+  mainWindow?.close();
+});
+
+ipcMain.handle('window:is-maximized', async () => mainWindow?.isMaximized() ?? false);
 
 ipcMain.handle('settings:get', async () => settings.loadSettings());
 

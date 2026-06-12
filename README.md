@@ -2,9 +2,7 @@
 
 > **English:** [README.en.md](README.en.md)
 
-Portable-приложение для macOS. Проверяет URL через [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) и запрашивает индексирование для страниц, которых нет в индексе.
-
-**Версия:** 1.0.2
+Portable-приложение для **Windows** и **macOS**. Проверяет URL через [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) и запрашивает индексирование для страниц, которых нет в индексе.
 
 **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
 
@@ -27,9 +25,19 @@ Portable-приложение для macOS. Проверяет URL через [G
 
 ## Скачивание
 
-Готовая сборка для macOS (arm64) доступна в [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases):
+Готовые portable-сборки доступны в [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). Актуальные имена файлов указаны на странице релиза.
 
-1. Скачайте `Google-Search-Console-Updater-1.0.2-mac-arm64.zip`
+### Windows (x64)
+
+1. Скачайте `Google-Search-Console-Updater-<версия>-win-x64.zip`
+2. Распакуйте архив
+3. Запустите `Google Search Console Updater.exe` из распакованной папки
+
+Установка не требуется.
+
+### macOS (Apple Silicon, arm64)
+
+1. Скачайте `Google-Search-Console-Updater-<версия>-mac-arm64.zip`
 2. Распакуйте архив
 3. Откройте `Google Search Console Updater.app`
 
@@ -95,24 +103,25 @@ Scopes `webmasters` и `indexing` — чувствительные. Google, ск
 
 Упакованное приложение при запуске проверяет [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). При наличии новой версии загружает `.zip` и показывает кнопку **«Установить и перезапустить»**. Также можно проверить обновления вручную через **О программе**.
 
-> На macOS без подписи Apple Developer автоустановка может не сработать. В этом случае нажмите **«Скачать вручную»** в баннере обновления или скачайте `.zip` из Releases и замените `.app`.
+> На macOS без подписи Apple Developer автоустановка может не сработать. В этом случае нажмите **«Скачать вручную»** в баннере обновления или скачайте `.zip` из Releases и замените `.app`. На Windows скачайте новый `.zip`, распакуйте и замените папку с приложением.
 
 ## Хранение данных
 
 Учётные данные **не хранятся в исходном коде**. Локально на устройстве пользователя:
 
-| Данные | Путь (macOS) |
-|--------|----------------|
-| OAuth Client ID / Secret | `~/Library/Application Support/Google Search Console Updater/oauth-config.json` |
-| Токены авторизации | `~/Library/Application Support/Google Search Console Updater/tokens.json` |
-| Язык интерфейса | `~/Library/Application Support/Google Search Console Updater/settings.json` |
+| Данные | Путь (Windows) | Путь (macOS) |
+|--------|----------------|--------------|
+| OAuth Client ID / Secret | `%APPDATA%\Google Search Console Updater\oauth-config.json` | `~/Library/Application Support/Google Search Console Updater/oauth-config.json` |
+| Токены авторизации | `%APPDATA%\Google Search Console Updater\tokens.json` | `~/Library/Application Support/Google Search Console Updater/tokens.json` |
+| Язык интерфейса | `%APPDATA%\Google Search Console Updater\settings.json` | `~/Library/Application Support/Google Search Console Updater/settings.json` |
 
 ## Сборка из исходников
 
 ```bash
 npm install
 npm start
-npm run build:mac
+npm run build:mac   # macOS (arm64)
+npm run build:win   # Windows (x64)
 ```
 
 Артефакты появятся в `dist/`.

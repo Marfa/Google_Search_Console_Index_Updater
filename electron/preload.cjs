@@ -3,6 +3,16 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('searchUpdater', {
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   getAbout: () => ipcRenderer.invoke('app:get-about'),
+  getPlatform: () => ipcRenderer.invoke('app:get-platform'),
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
+  isWindowMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+  onWindowMaximizeChange: (callback) => {
+    const listener = (_event, maximized) => callback(maximized);
+    ipcRenderer.on('window:maximize-changed', listener);
+    return () => ipcRenderer.removeListener('window:maximize-changed', listener);
+  },
   getSettings: () => ipcRenderer.invoke('settings:get'),
   getLocale: () => ipcRenderer.invoke('settings:get-locale'),
   setLocale: (locale) => ipcRenderer.invoke('settings:set-locale', locale),

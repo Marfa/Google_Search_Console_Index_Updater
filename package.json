@@ -1,6 +1,6 @@
 {
   "name": "google-search-console-updater",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Portable app for Google Search Console URL inspection and indexing requests",
   "main": "electron/main.cjs",
   "author": "Marfa",
@@ -13,6 +13,9 @@
     "start": "electron .",
     "build": "electron-builder --mac zip",
     "build:mac": "electron-builder --mac zip",
+    "build:win": "node scripts/build-win.mjs",
+    "package:win": "node scripts/package-win-release.mjs",
+    "icons:generate": "node scripts/generate-icons.mjs",
     "build:publish": "electron-builder --mac zip --publish always"
   },
   "dependencies": {
@@ -21,7 +24,12 @@
   },
   "devDependencies": {
     "electron": "^34.2.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "pe-library": "^1.0.1",
+    "png-to-ico": "^3.0.1",
+    "resedit": "^3.0.2",
+    "archiver": "^7.0.1",
+    "sharp": "^0.35.1"
   },
   "build": {
     "appId": "com.marfa.gsc-updater",
@@ -30,12 +38,16 @@
     "directories": {
       "output": "dist"
     },
-    "electronLanguages": ["en", "ru"],
+    "electronLanguages": [
+      "en",
+      "ru"
+    ],
     "afterPack": "scripts/after-pack.cjs",
     "files": [
       "electron/**/*",
       "renderer/**/*",
       "build/icon.png",
+      "build/icon.ico",
       "config.example.json",
       "package.json"
     ],
@@ -47,14 +59,29 @@
       }
     ],
     "mac": {
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "zip",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ],
       "artifactName": "Google-Search-Console-Updater-${version}-mac-arm64.${ext}",
       "category": "public.app-category.utilities"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Google-Search-Console-Updater-${version}-win-x64.${ext}"
     }
   }
 }

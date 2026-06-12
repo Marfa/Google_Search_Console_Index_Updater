@@ -7,6 +7,15 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="win-titlebar hidden" id="win-titlebar">
+      <span class="win-titlebar-title" data-i18n="appTitle">Google Search Console Updater</span>
+      <div class="win-titlebar-controls">
+        <button class="win-titlebar-btn" id="win-minimize" type="button" aria-label="Minimize">&#8722;</button>
+        <button class="win-titlebar-btn" id="win-maximize" type="button" aria-label="Maximize">&#9633;</button>
+        <button class="win-titlebar-btn win-titlebar-btn-close" id="win-close" type="button" aria-label="Close">&#10005;</button>
+      </div>
+    </div>
+
     <div class="app">
       <header class="header">
         <div>
@@ -19,7 +28,7 @@
             <button class="lang-btn" id="lang-en" type="button">EN</button>
           </div>
           <div class="auth-panel" id="auth-panel">
-            <span class="auth-status" id="auth-status" data-i18n="authNotSignedIn">Не авторизован</span>
+            <span class="auth-status hidden" id="auth-status"></span>
             <button class="btn btn-primary" id="login-btn" type="button" data-i18n="login">Войти в Google</button>
             <button class="btn btn-secondary hidden" id="cancel-login-btn" type="button" data-i18n="cancelLogin">Отменить вход</button>
             <button class="btn btn-secondary hidden" id="logout-btn" type="button" data-i18n="logout">Выйти</button>
@@ -131,7 +140,7 @@
       <div class="modal-backdrop" id="about-backdrop"></div>
       <div class="modal-card">
         <h2 data-i18n="aboutTitle">О программе</h2>
-        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version">1.0.4</span></p>
+        <p><strong data-i18n="aboutVersion">Версия</strong>: <span id="about-version"></span></p>
         <p>
           <strong data-i18n="aboutSource">Исходный код</strong>:
           <a href="https://github.com/Marfa/Google_Search_Console_Index_Updater" id="about-source-link">GitHub</a>
