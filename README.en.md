@@ -43,6 +43,17 @@ No installation required.
 
 For an unsigned app on first launch: **Right-click → Open → Open**.
 
+#### Privacy & Security permissions
+
+If Google sign-in does not complete or the browser does not open, go to **System Settings → Privacy & Security** and grant **Google Search Console Updater** the following permissions:
+
+| Setting | Why it is needed |
+|---------|------------------|
+| **Local Network** | OAuth sign-in: the app receives Google's response on `127.0.0.1` |
+| **Automation** | Opening the browser for Google sign-in (if macOS prompts for access) |
+
+After granting permissions, restart the app and try **Sign in with Google** again.
+
 ## Google Cloud setup
 
 Each user provides **their own** OAuth credentials. Secrets are not embedded in the app.
