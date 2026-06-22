@@ -2,12 +2,15 @@ const { execSync } = require('child_process');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const { app, shell } = require('electron');
+const { findLatestPlatformRelease, isNewerVersion } = require('./update-check.cjs');
 
 const RELEASE_PAGE_URL =
   'https://github.com/Marfa/Google_Search_Console_Index_Updater/releases/latest';
 
 let mainWindow = null;
 let autoInstallSupported = null;
+let pendingUpdate = null;
+let autoUpdaterListenersAttached = false;
 
 function getAppBundlePath() {
   if (process.platform !== 'darwin') {
@@ -23,7 +26,7 @@ function isAutoInstallSupported() {
   }
 
   if (!app.isPackaged || process.platform !== 'darwin') {
-    autoInstallSupported = true;
+    autoInstallSupported = false;
     return autoInstallSupported;
   }
 
@@ -39,6 +42,10 @@ function isAutoInstallSupported() {
   return autoInstallSupported;
 }
 
+function requiresManualInstall() {
+  return process.platform === 'win32' || !isAutoInstallSupported();
+}
+
 function isSignatureInstallError(message = '') {
   return /code signature|подпис|ShipIt|ресурсы кода/i.test(message);
 }
@@ -49,35 +56,30 @@ function sendToWindow(channel, payload) {
   }
 }
 
-function initAutoUpdater(window) {
-  mainWindow = window;
-
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.disableDifferentialDownload = true;
-
-  if (!app.isPackaged) {
+function attachAutoUpdaterListeners() {
+  if (autoUpdaterListenersAttached) {
     return;
   }
 
-  autoUpdater.on('checking-for-update', () => {
-    sendToWindow('update:status', { status: 'checking' });
-  });
+  autoUpdaterListenersAttached = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.disableDifferentialDownload = true;
 
   autoUpdater.on('update-available', (info) => {
     sendToWindow('update:status', {
       status: 'available',
       version: info.version,
-      releasePageUrl: RELEASE_PAGE_URL,
+      releasePageUrl: pendingUpdate?.releasePageUrl || RELEASE_PAGE_URL,
     });
   });
 
-  autoUpdater.on('update-not-available', (info) => {
+  autoUpdater.on('update-not-available', () => {
     sendToWindow('update:status', {
       status: 'none',
       installedVersion: app.getVersion(),
-      latestVersion: info?.version || app.getVersion(),
+      latestVersion: pendingUpdate?.version || app.getVersion(),
     });
+    pendingUpdate = null;
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -88,33 +90,53 @@ function initAutoUpdater(window) {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    const manualInstallRequired = !isAutoInstallSupported();
     sendToWindow('update:status', {
       status: 'ready',
       version: info.version,
-      releasePageUrl: RELEASE_PAGE_URL,
-      manualInstallRequired,
+      releasePageUrl: pendingUpdate?.releasePageUrl || RELEASE_PAGE_URL,
+      manualInstallRequired: false,
     });
   });
 
   autoUpdater.on('error', (error) => {
     const rawMessage = error?.message || 'Unknown update error';
     const manualInstallRequired =
-      !isAutoInstallSupported() || isSignatureInstallError(rawMessage);
+      requiresManualInstall() || isSignatureInstallError(rawMessage);
+
+    if (manualInstallRequired && pendingUpdate) {
+      sendToWindow('update:status', {
+        status: 'ready',
+        version: pendingUpdate.version,
+        releasePageUrl: pendingUpdate.releasePageUrl,
+        manualInstallRequired: true,
+      });
+      return;
+    }
 
     sendToWindow('update:status', {
       status: 'error',
       message: manualInstallRequired ? 'unsigned_mac_install' : rawMessage,
-      releasePageUrl: RELEASE_PAGE_URL,
+      releasePageUrl: pendingUpdate?.releasePageUrl || RELEASE_PAGE_URL,
       manualInstallRequired,
     });
   });
+}
+
+function initAutoUpdater(window) {
+  mainWindow = window;
+
+  if (!app.isPackaged) {
+    return;
+  }
+
+  attachAutoUpdaterListeners();
 
   setTimeout(() => {
     checkForUpdates().catch(() => {
       sendToWindow('update:status', {
         status: 'error',
         releasePageUrl: RELEASE_PAGE_URL,
+        manualInstallRequired: requiresManualInstall(),
       });
     });
   }, 3000);
@@ -126,6 +148,48 @@ async function checkForUpdates() {
     return null;
   }
 
+  sendToWindow('update:status', { status: 'checking' });
+
+  const latest = await findLatestPlatformRelease(process.platform);
+  const installedVersion = app.getVersion();
+
+  if (!latest) {
+    pendingUpdate = null;
+    sendToWindow('update:status', {
+      status: 'none',
+      installedVersion,
+    });
+    return null;
+  }
+
+  pendingUpdate = latest;
+
+  if (!isNewerVersion(latest.version, installedVersion)) {
+    pendingUpdate = null;
+    sendToWindow('update:status', {
+      status: 'none',
+      installedVersion,
+      latestVersion: latest.version,
+    });
+    return null;
+  }
+
+  if (requiresManualInstall()) {
+    sendToWindow('update:status', {
+      status: 'ready',
+      version: latest.version,
+      releasePageUrl: latest.releasePageUrl,
+      manualInstallRequired: true,
+    });
+    return null;
+  }
+
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: latest.downloadBaseUrl,
+  });
+  autoUpdater.autoDownload = true;
+
   return autoUpdater.checkForUpdates();
 }
 
@@ -134,7 +198,7 @@ async function installUpdate() {
     return { success: false };
   }
 
-  if (!isAutoInstallSupported()) {
+  if (requiresManualInstall()) {
     await openReleasePage();
     return {
       success: false,
@@ -158,7 +222,8 @@ async function installUpdate() {
 }
 
 function openReleasePage() {
-  return shell.openExternal(RELEASE_PAGE_URL);
+  const url = pendingUpdate?.releasePageUrl || RELEASE_PAGE_URL;
+  return shell.openExternal(url);
 }
 
 module.exports = {
