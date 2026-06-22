@@ -501,6 +501,9 @@ async function switchLocale(locale) {
   if (state.results.length > 0) {
     renderResults(state.results);
   }
+  if (state.updateStatus) {
+    handleUpdateStatus(state.updateStatus);
+  }
 }
 
 async function loadSites() {

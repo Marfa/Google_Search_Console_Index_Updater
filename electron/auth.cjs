@@ -4,6 +4,11 @@ const fs = require('fs');
 const path = require('path');
 const { OAuth2Client } = require('google-auth-library');
 const { app, shell } = require('electron');
+const {
+  renderSuccessPage,
+  renderErrorPage,
+  renderNoCodePage,
+} = require('./oauth-pages.cjs');
 
 const SCOPES = [
   'https://www.googleapis.com/auth/webmasters',
@@ -15,7 +20,6 @@ const SCOPES = [
 
 const REDIRECT_PATH = '/oauth/callback';
 
-const OAUTH_AUDIENCE_URL = 'https://console.cloud.google.com/auth/audience';
 const AUTH_TIMEOUT_MS = 90 * 1000;
 
 let activeAuthSession = null;
@@ -199,15 +203,7 @@ async function authenticate() {
       if (error) {
         const description = requestUrl.searchParams.get('error_description') || '';
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(`<!DOCTYPE html>
-<html lang="ru"><head><meta charset="UTF-8"><title>Ошибка авторизации</title></head>
-<body style="font-family:sans-serif;max-width:640px;margin:40px auto;line-height:1.5">
-<h1>Ошибка авторизации</h1>
-<p><strong>${error}</strong>${description ? `: ${description}` : ''}</p>
-<p>Если видите <em>access_denied</em>, добавьте свой Google-email в Google Auth Platform → Audience → Test users.</p>
-<p><a href="${OAUTH_AUDIENCE_URL}">Открыть раздел Audience</a></p>
-<p>Можно закрыть это окно и вернуться в приложение.</p>
-</body></html>`);
+        res.end(renderErrorPage(error, description));
         activeAuthSession = null;
         cleanup();
         reject(new Error(formatOAuthError(error, description)));
@@ -217,14 +213,12 @@ async function authenticate() {
       const authCode = requestUrl.searchParams.get('code');
       if (!authCode) {
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<h1>Код авторизации не получен</h1>');
+        res.end(renderNoCodePage());
         return;
       }
 
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(
-        '<h1>Авторизация успешна</h1><p>Можно закрыть это окно и вернуться в приложение.</p>'
-      );
+      res.end(renderSuccessPage());
 
       activeAuthSession = null;
       cleanup();
