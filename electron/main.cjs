@@ -1,8 +1,10 @@
-const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const auth = require('./auth.cjs');
 const api = require('./api.cjs');
 const settings = require('./settings.cjs');
+const { extractUrlsFromFile } = require('./url-import.cjs');
 const {
   initAutoUpdater,
   checkForUpdates,
@@ -204,9 +206,10 @@ ipcMain.handle('auth:status', async () => {
   }
 });
 
-ipcMain.handle('auth:login', async () => {
+ipcMain.handle('auth:login', async (_event, options = {}) => {
   try {
-    const client = await auth.authenticate();
+    const locale = options.locale || settings.loadSettings().locale;
+    const client = await auth.authenticate({ locale });
     const user = await auth.getUserInfo(client);
     return {
       email: user.email,
@@ -241,6 +244,36 @@ ipcMain.handle('sites:list', async () => {
     return api.listSites(client);
   } catch (error) {
     throw new Error(formatError(error));
+  }
+});
+
+ipcMain.handle('urls:import-file', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'URL lists', extensions: ['txt', 'csv', 'xls', 'xlsx'] },
+    ],
+  });
+
+  if (result.canceled || !result.filePaths[0]) {
+    return { canceled: true };
+  }
+
+  const filePath = result.filePaths[0];
+  const buffer = fs.readFileSync(filePath);
+
+  try {
+    const urls = extractUrlsFromFile(filePath, buffer);
+    return {
+      canceled: false,
+      fileName: path.basename(filePath),
+      urls,
+    };
+  } catch (error) {
+    if (error.message === 'unsupported_file_type') {
+      throw new Error('unsupported_file_type');
+    }
+    throw error;
   }
 });
 

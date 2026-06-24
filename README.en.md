@@ -43,6 +43,17 @@ No installation required.
 
 For an unsigned app on first launch: **Right-click → Open → Open**.
 
+### “App is damaged” error (macOS)
+
+If macOS says the app is damaged and **Privacy & Security** offers no “Open Anyway”, the `.app` has a broken ad-hoc signature (common with downloaded `.zip` builds). In Terminal:
+
+```bash
+xattr -cr "/path/to/Google Search Console Updater.app"
+codesign --force --deep --sign - "/path/to/Google Search Console Updater.app"
+```
+
+Then launch via **Right-click → Open**. Source builds now re-sign the bundle during packaging (`after-sign.cjs`).
+
 ## Google Cloud setup
 
 Each user provides **their own** OAuth credentials. Secrets are not embedded in the app.

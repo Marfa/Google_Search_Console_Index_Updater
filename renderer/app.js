@@ -48,6 +48,7 @@ const elements = {
   siteSelect: document.getElementById('site-select'),
   urlsInput: document.getElementById('urls-input'),
   urlsError: document.getElementById('urls-error'),
+  importUrlsBtn: document.getElementById('import-urls-btn'),
   processBtn: document.getElementById('process-btn'),
   progressPanel: document.getElementById('progress-panel'),
   progressFill: document.getElementById('progress-fill'),
@@ -110,6 +111,22 @@ function updateOAuthInputState({ showEmptyErrors = false } = {}) {
     (showEmptyErrors && clientSecretEmpty) ||
       (!clientSecretEmpty && !isValidClientSecret(clientSecretValue))
   );
+}
+
+function mergeUrlsIntoInput(urls) {
+  const existing = parseUrlList(elements.urlsInput.value).lines;
+  const merged = [...new Set([...existing, ...urls])];
+  elements.urlsInput.value = merged.join('\n');
+  updateUrlInputState();
+  return merged.length - existing.length;
+}
+
+function formatImportError(error) {
+  const message = formatError(error);
+  if (message.includes('unsupported_file_type')) {
+    return t('importUrlsUnsupported');
+  }
+  return t('importUrlsFailed');
 }
 
 function parseUrlList(rawValue) {
@@ -631,7 +648,8 @@ elements.loginBtn.addEventListener('click', async () => {
   setConfigMessage(t('loginBrowser'), '');
 
   try {
-    const user = await window.searchUpdater.login();
+    await window.searchUpdater.setLocale(getLocale());
+    const user = await window.searchUpdater.login({ locale: getLocale() });
     updateAuthUi({ authenticated: true, ...user });
 
     const sitesLoaded = await loadSites();
@@ -662,6 +680,28 @@ elements.logoutBtn.addEventListener('click', async () => {
 });
 
 elements.urlsInput.addEventListener('input', updateUrlInputState);
+
+elements.importUrlsBtn.addEventListener('click', async () => {
+  try {
+    const result = await window.searchUpdater.importUrlsFromFile();
+    if (result?.canceled) {
+      return;
+    }
+
+    if (!result.urls?.length) {
+      setConfigMessage(t('importUrlsEmpty', { file: result.fileName }), 'error');
+      return;
+    }
+
+    const added = mergeUrlsIntoInput(result.urls);
+    setConfigMessage(
+      t('importUrlsSuccess', { count: added > 0 ? added : result.urls.length, file: result.fileName }),
+      'success'
+    );
+  } catch (error) {
+    setConfigMessage(formatImportError(error), 'error');
+  }
+});
 
 elements.toggleSetupBtn.addEventListener('click', async () => {
   await setSetupCollapsed(!state.setupCollapsed);

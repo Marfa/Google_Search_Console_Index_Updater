@@ -33,28 +33,36 @@ function escapeHtml(value = '') {
     .replace(/"/g, '&quot;');
 }
 
-function getTexts() {
-  const locale = loadSettings().locale;
-  return TEXT[locale] || TEXT.ru;
+function resolveLocale(locale) {
+  if (locale === 'en' || locale === 'ru') {
+    return locale;
+  }
+
+  return loadSettings().locale === 'en' ? 'en' : 'ru';
 }
 
-function pageHtml(title, body) {
-  const locale = loadSettings().locale === 'en' ? 'en' : 'ru';
+function getTexts(locale) {
+  const resolved = resolveLocale(locale);
+  return TEXT[resolved] || TEXT.ru;
+}
+
+function pageHtml(title, body, locale) {
+  const resolved = resolveLocale(locale);
 
   return `<!DOCTYPE html>
-<html lang="${locale}"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title></head>
+<html lang="${resolved}"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title></head>
 <body style="font-family:sans-serif;max-width:640px;margin:40px auto;line-height:1.5">
 ${body}
 </body></html>`;
 }
 
-function renderSuccessPage() {
-  const t = getTexts();
-  return pageHtml(t.successTitle, `<h1>${t.successTitle}</h1><p>${t.successBody}</p>`);
+function renderSuccessPage(locale) {
+  const t = getTexts(locale);
+  return pageHtml(t.successTitle, `<h1>${t.successTitle}</h1><p>${t.successBody}</p>`, locale);
 }
 
-function renderErrorPage(error, description = '') {
-  const t = getTexts();
+function renderErrorPage(error, description = '', locale) {
+  const t = getTexts(locale);
   const details = description
     ? `: ${escapeHtml(description)}`
     : '';
@@ -65,13 +73,14 @@ function renderErrorPage(error, description = '') {
 <p><strong>${escapeHtml(error)}</strong>${details}</p>
 <p>${t.accessDeniedHint}</p>
 <p><a href="${OAUTH_AUDIENCE_URL}">${t.openAudience}</a></p>
-<p>${t.closeWindow}</p>`
+<p>${t.closeWindow}</p>`,
+    locale
   );
 }
 
-function renderNoCodePage() {
-  const t = getTexts();
-  return pageHtml(t.noCodeTitle, `<h1>${t.noCodeTitle}</h1><p>${t.closeWindow}</p>`);
+function renderNoCodePage(locale) {
+  const t = getTexts(locale);
+  return pageHtml(t.noCodeTitle, `<h1>${t.noCodeTitle}</h1><p>${t.closeWindow}</p>`, locale);
 }
 
 module.exports = {

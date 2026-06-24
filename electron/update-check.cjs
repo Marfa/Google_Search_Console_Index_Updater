@@ -1,5 +1,3 @@
-const semver = require('semver');
-
 const GITHUB_OWNER = 'Marfa';
 const GITHUB_REPO = 'Google_Search_Console_Index_Updater';
 const GITHUB_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
@@ -12,6 +10,24 @@ function getChannelFileName(platform = process.platform) {
 function parseYamlVersion(yamlText) {
   const match = yamlText.match(/^version:\s*['"]?([^'"\n]+)['"]?\s*$/m);
   return match ? match[1].trim() : null;
+}
+
+// ponytail: semver is dev-only; pack x.y.z compare inline for release tags
+function parseVersion(version) {
+  const match = String(version)
+    .trim()
+    .replace(/^v/i, '')
+    .match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!match) {
+    return null;
+  }
+
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function normalizeVersion(version) {
+  const parts = parseVersion(version);
+  return parts ? parts.join('.') : null;
 }
 
 async function fetchText(url) {
@@ -76,7 +92,8 @@ async function findLatestPlatformRelease(platform = process.platform) {
     const yamlText = await fetchText(asset.browser_download_url);
     const version = parseYamlVersion(yamlText);
 
-    if (!version || !semver.valid(semver.coerce(version))) {
+    const normalizedVersion = normalizeVersion(version);
+    if (!normalizedVersion) {
       continue;
     }
 
@@ -84,7 +101,7 @@ async function findLatestPlatformRelease(platform = process.platform) {
 
     return {
       tag,
-      version: semver.coerce(version).version,
+      version: normalizedVersion,
       channelFile,
       releasePageUrl: release.html_url,
       downloadBaseUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/${tag}/`,
@@ -95,14 +112,20 @@ async function findLatestPlatformRelease(platform = process.platform) {
 }
 
 function isNewerVersion(latestVersion, currentVersion) {
-  const latest = semver.coerce(latestVersion);
-  const current = semver.coerce(currentVersion);
+  const latest = parseVersion(latestVersion);
+  const current = parseVersion(currentVersion);
 
   if (!latest || !current) {
     return false;
   }
 
-  return semver.gt(latest, current);
+  for (let index = 0; index < 3; index += 1) {
+    if (latest[index] !== current[index]) {
+      return latest[index] > current[index];
+    }
+  }
+
+  return false;
 }
 
 module.exports = {

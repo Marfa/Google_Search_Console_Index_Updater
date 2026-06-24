@@ -23,12 +23,13 @@ contextBridge.exposeInMainWorld('searchUpdater', {
   getAuthConfig: () => ipcRenderer.invoke('auth:get-config'),
   saveAuthConfig: (config) => ipcRenderer.invoke('auth:save-config', config),
   getAuthStatus: () => ipcRenderer.invoke('auth:status'),
-  login: () => ipcRenderer.invoke('auth:login'),
+  login: (options) => ipcRenderer.invoke('auth:login', options),
   cancelLogin: () => ipcRenderer.invoke('auth:cancel-login'),
   logout: () => ipcRenderer.invoke('auth:logout'),
   resetAuthConfig: () => ipcRenderer.invoke('auth:reset-config'),
   listSites: () => ipcRenderer.invoke('sites:list'),
   processUrls: (payload) => ipcRenderer.invoke('urls:process', payload),
+  importUrlsFromFile: () => ipcRenderer.invoke('urls:import-file'),
   onProgress: (callback) => {
     const listener = (_event, progress) => callback(progress);
     ipcRenderer.on('urls:progress', listener);

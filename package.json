@@ -1,6 +1,6 @@
 {
   "name": "google-search-console-updater",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Portable app for Google Search Console URL inspection and indexing requests",
   "main": "electron/main.cjs",
   "author": "Marfa",
@@ -43,6 +43,7 @@
       "ru"
     ],
     "afterPack": "scripts/after-pack.cjs",
+    "afterSign": "scripts/after-sign.cjs",
     "files": [
       "electron/**/*",
       "renderer/**/*",
@@ -59,6 +60,7 @@
       }
     ],
     "mac": {
+      "identity": "-",
       "icon": "build/icon.png",
       "target": [
         {

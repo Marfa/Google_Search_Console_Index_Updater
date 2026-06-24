@@ -9,6 +9,7 @@ const {
   renderErrorPage,
   renderNoCodePage,
 } = require('./oauth-pages.cjs');
+const { loadSettings } = require('./settings.cjs');
 
 const SCOPES = [
   'https://www.googleapis.com/auth/webmasters',
@@ -150,7 +151,8 @@ function startCallbackServer() {
   });
 }
 
-async function authenticate() {
+async function authenticate(options = {}) {
+  const locale = options.locale || loadSettings().locale;
   const config = loadOAuthConfig();
   if (!config?.clientId || !config?.clientSecret) {
     throw new Error(
@@ -203,7 +205,7 @@ async function authenticate() {
       if (error) {
         const description = requestUrl.searchParams.get('error_description') || '';
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(renderErrorPage(error, description));
+        res.end(renderErrorPage(error, description, locale));
         activeAuthSession = null;
         cleanup();
         reject(new Error(formatOAuthError(error, description)));
@@ -213,12 +215,12 @@ async function authenticate() {
       const authCode = requestUrl.searchParams.get('code');
       if (!authCode) {
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(renderNoCodePage());
+        res.end(renderNoCodePage(locale));
         return;
       }
 
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(renderSuccessPage());
+      res.end(renderSuccessPage(locale));
 
       activeAuthSession = null;
       cleanup();
