@@ -128,6 +128,17 @@ function isNewerVersion(latestVersion, currentVersion) {
   return false;
 }
 
+if (require.main === module) {
+  const assert = require('assert');
+
+  assert.strictEqual(normalizeVersion('v1.0.8'), '1.0.8');
+  assert.strictEqual(isNewerVersion('1.0.9', '1.0.8'), true);
+  assert.strictEqual(isNewerVersion('1.0.8', '1.0.8'), false);
+  assert.strictEqual(isNewerVersion('1.0.7', '1.0.8'), false);
+  assert.strictEqual(parseVersion('not-a-version'), null);
+  console.log('update-check ok');
+}
+
 module.exports = {
   findLatestPlatformRelease,
   getChannelFileName,

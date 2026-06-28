@@ -1,6 +1,7 @@
 const path = require('path');
 
 const SUPPORTED_EXTENSIONS = new Set(['.txt', '.csv', '.xls', '.xlsx']);
+// ponytail: regex over file bytes, not a real spreadsheet parser; ceiling: exotic xls/xlsx layouts; upgrade: sheetjs
 const URL_RE = /https?:\/\/[^\s"'<>,;\x00-\x1f]+/gi;
 const TRAILING_JUNK = /[)>:@;,]+$/;
 

@@ -11,7 +11,7 @@ const {
   installUpdate,
   openReleasePage,
 } = require('./updater.cjs');
-const { formatError } = require('./errors.cjs');
+const { formatError, appMessage } = require('./errors.cjs');
 const pkg = require('../package.json');
 
 const APP_TITLE = 'Google Search Console Updater';
@@ -175,7 +175,7 @@ ipcMain.handle('auth:save-config', async (_event, config) => {
   const clientSecret = config?.clientSecret?.trim() || existing?.clientSecret;
 
   if (!clientId || !clientSecret) {
-    throw new Error('Client ID and Client Secret are required');
+    throw new Error(appMessage('clientCredentialsRequired'));
   }
 
   const saved = {
@@ -239,7 +239,7 @@ ipcMain.handle('sites:list', async () => {
   try {
     const client = await auth.getAuthenticatedClient();
     if (!client) {
-      throw new Error('Authentication required');
+      throw new Error(appMessage('authRequired'));
     }
     return api.listSites(client);
   } catch (error) {
@@ -281,7 +281,7 @@ ipcMain.handle('urls:process', async (_event, payload) => {
   try {
     const client = await auth.getAuthenticatedClient();
     if (!client) {
-      throw new Error('Authentication required');
+      throw new Error(appMessage('authRequired'));
     }
 
     const urls = (payload.urls || [])
@@ -289,7 +289,7 @@ ipcMain.handle('urls:process', async (_event, payload) => {
       .filter(Boolean);
 
     if (urls.length === 0) {
-      throw new Error('URL list is empty');
+      throw new Error(appMessage('urlListEmpty'));
     }
 
     const results = await api.processUrls(client, urls, {

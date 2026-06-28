@@ -23,34 +23,74 @@ const REDIRECT_PATH = '/oauth/callback';
 
 const AUTH_TIMEOUT_MS = 90 * 1000;
 
+const AUTH_MESSAGES = {
+  ru: {
+    cancelled: 'Авторизация отменена',
+    credentialsRequired:
+      'Укажите OAuth credentials (Client ID и Client Secret) в настройках приложения',
+    credentialsNotConfigured: 'OAuth credentials не настроены',
+    timeout:
+      'Время ожидания авторизации истекло. Если Google показал ошибку в браузере, закройте вкладку и попробуйте снова.',
+    userInfoFailed: 'Не удалось получить информацию о пользователе',
+    accessDenied:
+      'Доступ запрещён (403: access_denied). OAuth-приложение в Google Cloud находится в режиме тестирования. ' +
+      'Добавьте свой Google-email в список тестовых пользователей: Google Cloud Console → Google Auth Platform → Audience → Test users → Add users. ' +
+      'Используйте тот же email, с которым входите в Search Console.',
+    oauthError: (error) => `Ошибка OAuth: ${error}`,
+    oauthErrorWithDescription: (error, description) =>
+      `Ошибка OAuth (${error}): ${description}`,
+  },
+  en: {
+    cancelled: 'Sign-in cancelled',
+    credentialsRequired: 'Enter OAuth credentials (Client ID and Client Secret) in app settings',
+    credentialsNotConfigured: 'OAuth credentials are not configured',
+    timeout:
+      'Sign-in timed out. If Google showed an error in the browser, close the tab and try again.',
+    userInfoFailed: 'Failed to fetch user profile',
+    accessDenied:
+      'Access denied (403: access_denied). The OAuth app in Google Cloud is in testing mode. ' +
+      'Add your Google email to test users: Google Cloud Console → Google Auth Platform → Audience → Test users → Add users. ' +
+      'Use the same email you sign in to Search Console with.',
+    oauthError: (error) => `OAuth error: ${error}`,
+    oauthErrorWithDescription: (error, description) =>
+      `OAuth error (${error}): ${description}`,
+  },
+};
+
 let activeAuthSession = null;
+
+function resolveLocale(locale) {
+  return locale === 'en' ? 'en' : 'ru';
+}
+
+function authText(locale) {
+  return AUTH_MESSAGES[resolveLocale(locale)];
+}
 
 function cancelAuthentication() {
   if (!activeAuthSession) {
     return false;
   }
 
-  const { cleanup, reject } = activeAuthSession;
+  const { cleanup, reject, locale } = activeAuthSession;
   activeAuthSession = null;
   cleanup();
-  reject(new Error('Авторизация отменена'));
+  reject(new Error(authText(locale).cancelled));
   return true;
 }
 
-function formatOAuthError(error, description = '') {
+function formatOAuthError(error, description = '', locale = loadSettings().locale) {
+  const t = authText(locale);
+
   if (error === 'access_denied') {
-    return (
-      'Доступ запрещён (403: access_denied). OAuth-приложение в Google Cloud находится в режиме тестирования. ' +
-      'Добавьте свой Google-email в список тестовых пользователей: Google Cloud Console → Google Auth Platform → Audience → Test users → Add users. ' +
-      'Используйте тот же email, с которым входите в Search Console.'
-    );
+    return t.accessDenied;
   }
 
   if (description) {
-    return `Ошибка OAuth (${error}): ${description}`;
+    return t.oauthErrorWithDescription(error, description);
   }
 
-  return `Ошибка OAuth: ${error}`;
+  return t.oauthError(error);
 }
 
 function getConfigPath() {
@@ -115,9 +155,10 @@ function resetOAuthSettings() {
 }
 
 async function getAuthenticatedClient() {
+  const locale = loadSettings().locale;
   const config = loadOAuthConfig();
   if (!config?.clientId || !config?.clientSecret) {
-    throw new Error('OAuth credentials not configured');
+    throw new Error(authText(locale).credentialsNotConfigured);
   }
 
   const client = createOAuthClient(config);
@@ -153,11 +194,10 @@ function startCallbackServer() {
 
 async function authenticate(options = {}) {
   const locale = options.locale || loadSettings().locale;
+  const t = authText(locale);
   const config = loadOAuthConfig();
   if (!config?.clientId || !config?.clientSecret) {
-    throw new Error(
-      'Укажите OAuth credentials (Client ID и Client Secret) в настройках приложения'
-    );
+    throw new Error(t.credentialsRequired);
   }
 
   const client = createOAuthClient(config);
@@ -183,14 +223,10 @@ async function authenticate(options = {}) {
     const timeout = setTimeout(() => {
       activeAuthSession = null;
       cleanup();
-      reject(
-        new Error(
-          'Время ожидания авторизации истекло. Если Google показал ошибку в браузере, закройте вкладку и попробуйте снова.'
-        )
-      );
+      reject(new Error(t.timeout));
     }, AUTH_TIMEOUT_MS);
 
-    activeAuthSession = { cleanup, reject };
+    activeAuthSession = { cleanup, reject, locale };
 
     server.on('request', (req, res) => {
       const requestUrl = new URL(req.url, `http://127.0.0.1:${port}`);
@@ -208,7 +244,7 @@ async function authenticate(options = {}) {
         res.end(renderErrorPage(error, description, locale));
         activeAuthSession = null;
         cleanup();
-        reject(new Error(formatOAuthError(error, description)));
+        reject(new Error(formatOAuthError(error, description, locale)));
         return;
       }
 
@@ -250,13 +286,14 @@ async function authenticate(options = {}) {
 }
 
 async function getUserInfo(client) {
+  const locale = loadSettings().locale;
   const token = client.credentials.access_token;
   const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!response.ok) {
-    throw new Error('Не удалось получить информацию о пользователе');
+    throw new Error(authText(locale).userInfoFailed);
   }
 
   return response.json();

@@ -19,8 +19,9 @@ Portable app for **Windows** and **macOS** that inspects URLs via the [Google Se
 - Sign in with a Google account that has Search Console access
 - Inspect a list of URLs via the URL Inspection API
 - Automatically request indexing for URLs that are not indexed
+- Import URLs from `.txt`, `.csv`, `.xls`, and `.xlsx` files
 - Export results to CSV
-- Russian / English UI
+- Russian / English UI, including the OAuth callback page
 - Auto-updates from [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases)
 
 ## Download
@@ -52,7 +53,7 @@ xattr -cr "/path/to/Google Search Console Updater.app"
 codesign --force --deep --sign - "/path/to/Google Search Console Updater.app"
 ```
 
-Then launch via **Right-click → Open**. Source builds now re-sign the bundle during packaging (`after-sign.cjs`).
+Then launch via **Right-click → Open**. Builds from **v1.0.8** onward re-sign the bundle during packaging (`after-sign.cjs`). For older `.zip` files, use the Terminal commands above.
 
 ## Google Cloud setup
 
@@ -79,7 +80,7 @@ While the OAuth app is in **Testing** mode, only emails listed in **Test users**
 
 1. Enter Client ID and Client Secret → **Save settings**
 2. **Sign in with Google**
-3. Paste your URL list (one per line)
+3. Paste your URL list (one per line) or click **Import URLs from file**
 4. Click **Inspect and request indexing**
 5. Review results and export CSV if needed
 
@@ -153,8 +154,11 @@ Artifacts are written to `dist/`.
 ## Project structure
 
 ```
-├── electron/       # Main process, OAuth, API, auto-update
+├── electron/       # Main process, OAuth, API, auto-update, URL import
+│   ├── url-import.cjs
+│   └── ...
 ├── renderer/       # UI, i18n
+├── scripts/        # after-pack, after-sign
 ├── build/          # App icon
 ├── config.example.json
 ├── LICENSE
