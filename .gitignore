@@ -1,4 +1,5 @@
 node_modules/
+.cursor/rules/
 dist/
 config.json
 .DS_Store
