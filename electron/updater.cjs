@@ -3,9 +3,25 @@ const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const { app, shell } = require('electron');
 const { findLatestPlatformRelease, isNewerVersion } = require('./update-check.cjs');
+const { isAllowedExternalUrl } = require('./secure-url.cjs');
 
 const RELEASE_PAGE_URL =
   'https://github.com/Marfa/Google_Search_Console_Index_Updater/releases/latest';
+
+function isTrustedReleaseUrl(urlString) {
+  if (!isAllowedExternalUrl(urlString)) {
+    return false;
+  }
+  try {
+    const url = new URL(urlString);
+    return (
+      url.hostname === 'github.com' &&
+      url.pathname.startsWith('/Marfa/Google_Search_Console_Index_Updater')
+    );
+  } catch {
+    return false;
+  }
+}
 
 let mainWindow = null;
 let autoInstallSupported = null;
@@ -223,6 +239,9 @@ async function installUpdate() {
 
 function openReleasePage() {
   const url = pendingUpdate?.releasePageUrl || RELEASE_PAGE_URL;
+  if (!isTrustedReleaseUrl(url)) {
+    return shell.openExternal(RELEASE_PAGE_URL);
+  }
   return shell.openExternal(url);
 }
 

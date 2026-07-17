@@ -26,6 +26,7 @@ const TRANSLATIONS = {
     clientSecret: 'Client Secret',
     clientIdPlaceholder: 'xxx.apps.googleusercontent.com',
     clientSecretPlaceholder: 'Введите Client Secret',
+    clientSecretSavedPlaceholder: 'Сохранён (введите новый, чтобы заменить)',
     saveSettings: 'Сохранить настройки',
     resetSettings: 'Сбросить настройки',
     workTitle: 'Проверка URL',
@@ -121,6 +122,7 @@ const TRANSLATIONS = {
     clientSecret: 'Client Secret',
     clientIdPlaceholder: 'xxx.apps.googleusercontent.com',
     clientSecretPlaceholder: 'Enter Client Secret',
+    clientSecretSavedPlaceholder: 'Saved (enter a new one to replace)',
     saveSettings: 'Save settings',
     resetSettings: 'Reset settings',
     workTitle: 'URL inspection',
@@ -229,11 +231,6 @@ function applyTranslations() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
     const key = element.dataset.i18nPlaceholder;
     element.placeholder = t(key);
-  });
-
-  document.querySelectorAll('[data-i18n-html]').forEach((element) => {
-    const key = element.dataset.i18nHtml;
-    element.innerHTML = t(key);
   });
 
   const langRu = document.getElementById('lang-ru');

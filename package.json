@@ -1,6 +1,6 @@
 {
   "name": "google-search-console-updater",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Portable app for Google Search Console URL inspection and indexing requests",
   "main": "electron/main.cjs",
   "author": "Marfa",
@@ -16,19 +16,21 @@
     "build:win": "node scripts/build-win.mjs",
     "package:win": "node scripts/package-win-release.mjs",
     "icons:generate": "node scripts/generate-icons.mjs",
-    "build:publish": "electron-builder --mac zip --publish always"
+    "build:publish": "electron-builder --mac zip --publish always",
+    "audit": "npm audit",
+    "outdated": "npx npm-check-updates"
   },
   "dependencies": {
-    "electron-updater": "^6.6.2",
-    "google-auth-library": "^9.15.1"
+    "electron-updater": "^6.8.9",
+    "google-auth-library": "^10.9.0"
   },
   "devDependencies": {
-    "electron": "^34.2.0",
-    "electron-builder": "^25.1.8",
+    "archiver": "^7.0.1",
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3",
     "pe-library": "^1.0.1",
     "png-to-ico": "^3.0.1",
     "resedit": "^3.0.2",
-    "archiver": "^7.0.1",
     "sharp": "^0.35.1"
   },
   "build": {

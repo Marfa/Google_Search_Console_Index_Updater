@@ -11,6 +11,7 @@ const state = {
   about: null,
   setupCollapsed: false,
   updateStatus: null,
+  hasClientSecret: false,
 };
 
 const elements = {
@@ -93,7 +94,48 @@ function isValidClientId(value) {
 }
 
 function isValidClientSecret(value) {
-  return value.trim().length > 0;
+  if (value.trim().length > 0) {
+    return true;
+  }
+  return state.hasClientSecret;
+}
+
+function createSummaryItem(value, label) {
+  const item = document.createElement('div');
+  item.className = 'summary-item';
+  const strong = document.createElement('strong');
+  strong.textContent = String(value);
+  const span = document.createElement('span');
+  span.textContent = label;
+  item.append(strong, span);
+  return item;
+}
+
+function createResultRow(result) {
+  const status = statusLabel(result);
+  const row = document.createElement('tr');
+
+  const urlCell = document.createElement('td');
+  urlCell.className = 'url-cell';
+  urlCell.textContent = result.url || '';
+
+  const statusCell = document.createElement('td');
+  const badge = document.createElement('span');
+  badge.className = `badge ${status.className}`;
+  badge.textContent = status.text;
+  statusCell.appendChild(badge);
+
+  const coverageCell = document.createElement('td');
+  coverageCell.textContent = result.coverageState || t('emDash');
+
+  const crawlCell = document.createElement('td');
+  crawlCell.textContent = formatDate(result.lastCrawlTime);
+
+  const actionCell = document.createElement('td');
+  actionCell.textContent = actionLabel(result);
+
+  row.append(urlCell, statusCell, coverageCell, crawlCell, actionCell);
+  return row;
 }
 
 function updateOAuthInputState({ showEmptyErrors = false } = {}) {
@@ -108,8 +150,7 @@ function updateOAuthInputState({ showEmptyErrors = false } = {}) {
   );
   elements.clientSecret.classList.toggle(
     'invalid',
-    (showEmptyErrors && clientSecretEmpty) ||
-      (!clientSecretEmpty && !isValidClientSecret(clientSecretValue))
+    showEmptyErrors && clientSecretEmpty && !state.hasClientSecret
   );
 }
 
@@ -264,7 +305,12 @@ function updateAuthUi(auth) {
 
 function renderSites() {
   const selected = elements.siteSelect.value;
-  elements.siteSelect.innerHTML = `<option value="">${t('autoDetectSite')}</option>`;
+  elements.siteSelect.replaceChildren();
+
+  const autoOption = document.createElement('option');
+  autoOption.value = '';
+  autoOption.textContent = t('autoDetectSite');
+  elements.siteSelect.appendChild(autoOption);
 
   for (const site of state.sites) {
     const option = document.createElement('option');
@@ -285,39 +331,14 @@ function renderResults(results) {
   const requested = results.filter((item) => item.status === 'indexing_requested').length;
   const failed = results.filter((item) => item.status === 'error' || item.status === 'not_indexed').length;
 
-  elements.summary.innerHTML = `
-    <div class="summary-item">
-      <strong>${results.length}</strong>
-      <span>${t('summaryTotal')}</span>
-    </div>
-    <div class="summary-item">
-      <strong>${indexed}</strong>
-      <span>${t('summaryIndexed')}</span>
-    </div>
-    <div class="summary-item">
-      <strong>${requested}</strong>
-      <span>${t('summaryRequested')}</span>
-    </div>
-    <div class="summary-item">
-      <strong>${failed}</strong>
-      <span>${t('summaryFailed')}</span>
-    </div>
-  `;
+  elements.summary.replaceChildren(
+    createSummaryItem(results.length, t('summaryTotal')),
+    createSummaryItem(indexed, t('summaryIndexed')),
+    createSummaryItem(requested, t('summaryRequested')),
+    createSummaryItem(failed, t('summaryFailed'))
+  );
 
-  elements.resultsBody.innerHTML = results
-    .map((result) => {
-      const status = statusLabel(result);
-      return `
-        <tr>
-          <td class="url-cell">${result.url}</td>
-          <td><span class="badge ${status.className}">${status.text}</span></td>
-          <td>${result.coverageState || t('emDash')}</td>
-          <td>${formatDate(result.lastCrawlTime)}</td>
-          <td>${actionLabel(result)}</td>
-        </tr>
-      `;
-    })
-    .join('');
+  elements.resultsBody.replaceChildren(...results.map(createResultRow));
 
   elements.resultsCard.classList.remove('hidden');
   elements.resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -353,9 +374,11 @@ function applyAuthConfig(config) {
   if (config.clientId) {
     elements.clientId.value = config.clientId;
   }
-  if (config.clientSecret) {
-    elements.clientSecret.value = config.clientSecret;
-  }
+  state.hasClientSecret = Boolean(config.hasClientSecret || config.hasConfig);
+  elements.clientSecret.value = '';
+  elements.clientSecret.placeholder = state.hasClientSecret
+    ? t('clientSecretSavedPlaceholder')
+    : t('clientSecretPlaceholder');
   updateOAuthInputState();
 }
 
@@ -507,6 +530,10 @@ async function switchLocale(locale) {
   await window.searchUpdater.setLocale(locale);
   setLocale(locale);
   applyTranslations();
+  applyAuthConfig({
+    clientId: elements.clientId.value,
+    hasClientSecret: state.hasClientSecret,
+  });
   updateSetupCollapsedUi(state.setupCollapsed);
   updateAuthUi({
     authenticated: state.authenticated,
@@ -608,6 +635,8 @@ elements.resetConfigBtn.addEventListener('click', async () => {
   await window.searchUpdater.resetAuthConfig();
   elements.clientId.value = '';
   elements.clientSecret.value = '';
+  state.hasClientSecret = false;
+  elements.clientSecret.placeholder = t('clientSecretPlaceholder');
   updateOAuthInputState();
   state.sites = [];
   renderSites();
@@ -804,6 +833,23 @@ elements.enableIndexingApi.addEventListener('click', async (event) => {
   await window.searchUpdater.openExternal(
     'https://console.cloud.google.com/apis/library/indexing.googleapis.com'
   );
+});
+
+async function openAboutLink(event, url) {
+  event.preventDefault();
+  if (url) {
+    await window.searchUpdater.openExternal(url);
+  }
+}
+
+elements.aboutSourceLink.addEventListener('click', (event) => {
+  openAboutLink(event, state.about?.sourceUrl);
+});
+elements.aboutDonateLink.addEventListener('click', (event) => {
+  openAboutLink(event, state.about?.donateUrl);
+});
+elements.aboutCryptoLink.addEventListener('click', (event) => {
+  openAboutLink(event, state.about?.cryptoDonateUrl);
 });
 
 window.searchUpdater.onProgress((progress) => {

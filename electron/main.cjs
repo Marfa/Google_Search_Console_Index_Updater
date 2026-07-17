@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { pathToFileURL } = require('url');
 const auth = require('./auth.cjs');
 const api = require('./api.cjs');
 const settings = require('./settings.cjs');
@@ -12,12 +13,34 @@ const {
   openReleasePage,
 } = require('./updater.cjs');
 const { formatError, appMessage } = require('./errors.cjs');
+const { isAllowedExternalUrl } = require('./secure-url.cjs');
 const pkg = require('../package.json');
 
 const APP_TITLE = 'Google Search Console Updater';
 const APP_BACKGROUND = '#f4f6f8';
+const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
+const RENDERER_INDEX = path.join(RENDERER_DIR, 'index.html');
+const RENDERER_DIR_URL = pathToFileURL(RENDERER_DIR + path.sep).href;
 
 let mainWindow = null;
+
+function isTrustedRendererUrl(url) {
+  return typeof url === 'string' && url.startsWith(RENDERER_DIR_URL);
+}
+
+function assertTrustedSender(event) {
+  const url = event.senderFrame?.url || '';
+  if (!isTrustedRendererUrl(url)) {
+    throw new Error('Untrusted IPC sender');
+  }
+}
+
+function openExternalSafe(url) {
+  if (!isAllowedExternalUrl(url)) {
+    throw new Error('Blocked external URL');
+  }
+  return shell.openExternal(url);
+}
 
 if (process.platform === 'win32') {
   app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
@@ -50,10 +73,28 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedExternalUrl(url)) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isTrustedRendererUrl(url)) {
+      return;
+    }
+    event.preventDefault();
+    if (isAllowedExternalUrl(url)) {
+      shell.openExternal(url);
+    }
+  });
+
+  mainWindow.loadFile(RENDERER_INDEX);
 
   if (process.env.NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -160,16 +201,18 @@ ipcMain.handle('update:open-release', async () => {
   return { success: true };
 });
 
-ipcMain.handle('auth:get-config', async () => {
+ipcMain.handle('auth:get-config', async (event) => {
+  assertTrustedSender(event);
   const config = auth.loadOAuthConfig();
   return {
     hasConfig: Boolean(config?.clientId && config?.clientSecret),
+    hasClientSecret: Boolean(config?.clientSecret),
     clientId: config?.clientId || '',
-    clientSecret: config?.clientSecret || '',
   };
 });
 
-ipcMain.handle('auth:save-config', async (_event, config) => {
+ipcMain.handle('auth:save-config', async (event, config) => {
+  assertTrustedSender(event);
   const existing = auth.loadOAuthConfig();
   const clientId = config?.clientId?.trim();
   const clientSecret = config?.clientSecret?.trim() || existing?.clientSecret;
@@ -178,17 +221,23 @@ ipcMain.handle('auth:save-config', async (_event, config) => {
     throw new Error(appMessage('clientCredentialsRequired'));
   }
 
-  const saved = {
+  auth.saveOAuthConfig({
     clientId,
     clientSecret,
+  });
+
+  return {
+    success: true,
+    config: {
+      clientId,
+      hasClientSecret: true,
+      hasConfig: true,
+    },
   };
-
-  auth.saveOAuthConfig(saved);
-
-  return { success: true, config: saved };
 });
 
-ipcMain.handle('auth:status', async () => {
+ipcMain.handle('auth:status', async (event) => {
+  assertTrustedSender(event);
   try {
     const client = await auth.getAuthenticatedClient();
     if (!client) {
@@ -206,7 +255,8 @@ ipcMain.handle('auth:status', async () => {
   }
 });
 
-ipcMain.handle('auth:login', async (_event, options = {}) => {
+ipcMain.handle('auth:login', async (event, options = {}) => {
+  assertTrustedSender(event);
   try {
     const locale = options.locale || settings.loadSettings().locale;
     const client = await auth.authenticate({ locale });
@@ -220,22 +270,26 @@ ipcMain.handle('auth:login', async (_event, options = {}) => {
   }
 });
 
-ipcMain.handle('auth:cancel-login', async () => {
+ipcMain.handle('auth:cancel-login', async (event) => {
+  assertTrustedSender(event);
   auth.cancelAuthentication();
   return { success: true };
 });
 
-ipcMain.handle('auth:logout', async () => {
+ipcMain.handle('auth:logout', async (event) => {
+  assertTrustedSender(event);
   auth.clearTokens();
   return { success: true };
 });
 
-ipcMain.handle('auth:reset-config', async () => {
+ipcMain.handle('auth:reset-config', async (event) => {
+  assertTrustedSender(event);
   auth.resetOAuthSettings();
   return { success: true };
 });
 
-ipcMain.handle('sites:list', async () => {
+ipcMain.handle('sites:list', async (event) => {
+  assertTrustedSender(event);
   try {
     const client = await auth.getAuthenticatedClient();
     if (!client) {
@@ -247,7 +301,8 @@ ipcMain.handle('sites:list', async () => {
   }
 });
 
-ipcMain.handle('urls:import-file', async () => {
+ipcMain.handle('urls:import-file', async (event) => {
+  assertTrustedSender(event);
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
@@ -277,7 +332,8 @@ ipcMain.handle('urls:import-file', async () => {
   }
 });
 
-ipcMain.handle('urls:process', async (_event, payload) => {
+ipcMain.handle('urls:process', async (event, payload) => {
+  assertTrustedSender(event);
   try {
     const client = await auth.getAuthenticatedClient();
     if (!client) {
@@ -307,6 +363,7 @@ ipcMain.handle('urls:process', async (_event, payload) => {
   }
 });
 
-ipcMain.handle('shell:open-external', async (_event, url) => {
-  await shell.openExternal(url);
+ipcMain.handle('shell:open-external', async (event, url) => {
+  assertTrustedSender(event);
+  await openExternalSafe(url);
 });

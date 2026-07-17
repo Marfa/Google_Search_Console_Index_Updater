@@ -1,4 +1,5 @@
 const http = require('http');
+const crypto = require('crypto');
 const { URL } = require('url');
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +11,8 @@ const {
   renderNoCodePage,
 } = require('./oauth-pages.cjs');
 const { loadSettings } = require('./settings.cjs');
+const { readJson, writeJson } = require('./secure-store.cjs');
+const { isAllowedExternalUrl } = require('./secure-url.cjs');
 
 const SCOPES = [
   'https://www.googleapis.com/auth/webmasters',
@@ -39,6 +42,7 @@ const AUTH_MESSAGES = {
     oauthError: (error) => `Ошибка OAuth: ${error}`,
     oauthErrorWithDescription: (error, description) =>
       `Ошибка OAuth (${error}): ${description}`,
+    stateMismatch: 'Ошибка OAuth: несовпадение state (возможная CSRF-атака)',
   },
   en: {
     cancelled: 'Sign-in cancelled',
@@ -54,6 +58,7 @@ const AUTH_MESSAGES = {
     oauthError: (error) => `OAuth error: ${error}`,
     oauthErrorWithDescription: (error, description) =>
       `OAuth error (${error}): ${description}`,
+    stateMismatch: 'OAuth error: state mismatch (possible CSRF attack)',
   },
 };
 
@@ -102,16 +107,15 @@ function getTokenPath() {
 }
 
 function loadOAuthConfig() {
-  const userConfig = getConfigPath();
-  if (fs.existsSync(userConfig)) {
-    return JSON.parse(fs.readFileSync(userConfig, 'utf8'));
+  try {
+    return readJson(getConfigPath());
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 function saveOAuthConfig(config) {
-  fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+  writeJson(getConfigPath(), config);
 }
 
 function createOAuthClient(config) {
@@ -123,15 +127,15 @@ function createOAuthClient(config) {
 }
 
 function loadTokens() {
-  const tokenPath = getTokenPath();
-  if (!fs.existsSync(tokenPath)) {
+  try {
+    return readJson(getTokenPath());
+  } catch {
     return null;
   }
-  return JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
 }
 
 function saveTokens(tokens) {
-  fs.writeFileSync(getTokenPath(), JSON.stringify(tokens, null, 2));
+  writeJson(getTokenPath(), tokens);
 }
 
 function clearTokens() {
@@ -205,10 +209,16 @@ async function authenticate(options = {}) {
   const redirectUri = `http://127.0.0.1:${port}${REDIRECT_PATH}`;
   client.redirectUri = redirectUri;
 
+  const { codeVerifier, codeChallenge } = await client.generateCodeVerifierAsync();
+  const oauthState = crypto.randomBytes(24).toString('base64url');
+
   const authUrl = client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent',
+    state: oauthState,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
   });
 
   const codePromise = new Promise((resolve, reject) => {
@@ -248,6 +258,16 @@ async function authenticate(options = {}) {
         return;
       }
 
+      const returnedState = requestUrl.searchParams.get('state');
+      if (!returnedState || returnedState !== oauthState) {
+        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(renderErrorPage('invalid_state', t.stateMismatch, locale));
+        activeAuthSession = null;
+        cleanup();
+        reject(new Error(t.stateMismatch));
+        return;
+      }
+
       const authCode = requestUrl.searchParams.get('code');
       if (!authCode) {
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -264,6 +284,10 @@ async function authenticate(options = {}) {
     });
   });
 
+  if (!isAllowedExternalUrl(authUrl)) {
+    server.close();
+    throw new Error(t.oauthError('invalid_auth_url'));
+  }
   await shell.openExternal(authUrl);
 
   let code;
@@ -274,7 +298,7 @@ async function authenticate(options = {}) {
     throw error;
   }
 
-  const { tokens } = await client.getToken(code);
+  const { tokens } = await client.getToken({ code, codeVerifier });
   client.setCredentials(tokens);
   saveTokens(tokens);
 
