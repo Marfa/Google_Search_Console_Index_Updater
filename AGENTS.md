@@ -16,6 +16,15 @@
 - Real credentials go in local `config.json` / app `userData` only (see `.gitignore`).
 - If a change might touch credentials, run `gitleaks detect --source .` before committing.
 
+## Build artifacts
+
+- Output lives in `dist/` (see `.gitignore`); also treat `*.log`, `*.blockmap`, and `.DS_Store` as disposable build/cache noise.
+- After every commit, `post-commit` runs `scripts/clean-stale-build-artifacts.sh` and deletes those artifacts when they are older than 7 days.
+- Install hooks locally:
+  - `ln -sf ../../scripts/pre-commit-gitleaks.sh .git/hooks/pre-commit`
+  - `ln -sf ../../scripts/post-commit-clean-artifacts.sh .git/hooks/post-commit`
+- Manual cleanup: `scripts/clean-stale-build-artifacts.sh` (override age with `MAX_AGE_DAYS=14`).
+
 ## Security checks (when asked or before release)
 
 1. `npm audit` — fail on critical in CI; investigate high.
