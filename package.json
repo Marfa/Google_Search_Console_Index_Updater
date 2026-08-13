@@ -1,7 +1,7 @@
 {
   "name": "google-search-console-updater",
-  "version": "1.0.10",
-  "description": "Portable app for Google Search Console URL inspection and indexing requests",
+  "version": "2.0.0",
+  "description": "Portable app for Google Search Console URL inspection, indexing, and AI site audit",
   "main": "electron/main.cjs",
   "author": "Marfa",
   "license": "CC-BY-NC-SA-4.0",
@@ -18,7 +18,8 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "build:publish": "electron-builder --mac zip --publish always",
     "audit": "npm audit",
-    "outdated": "npx npm-check-updates"
+    "outdated": "npx npm-check-updates",
+    "check:audit-helpers": "node scripts/check-audit-helpers.cjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",

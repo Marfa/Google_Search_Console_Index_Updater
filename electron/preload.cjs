@@ -30,10 +30,20 @@ contextBridge.exposeInMainWorld('searchUpdater', {
   listSites: () => ipcRenderer.invoke('sites:list'),
   processUrls: (payload) => ipcRenderer.invoke('urls:process', payload),
   importUrlsFromFile: () => ipcRenderer.invoke('urls:import-file'),
+  getAiConfig: () => ipcRenderer.invoke('ai:get-config'),
+  saveAiConfig: (config) => ipcRenderer.invoke('ai:save-config', config),
+  clearAiKey: () => ipcRenderer.invoke('ai:clear-key'),
+  runAudit: (payload) => ipcRenderer.invoke('audit:run', payload),
+  exportAudit: (payload) => ipcRenderer.invoke('audit:export', payload),
   onProgress: (callback) => {
     const listener = (_event, progress) => callback(progress);
     ipcRenderer.on('urls:progress', listener);
     return () => ipcRenderer.removeListener('urls:progress', listener);
+  },
+  onAuditProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('audit:progress', listener);
+    return () => ipcRenderer.removeListener('audit:progress', listener);
   },
   onUpdateStatus: (callback) => {
     const listener = (_event, status) => callback(status);

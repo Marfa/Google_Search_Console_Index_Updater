@@ -79,34 +79,92 @@
       </section>
 
       <section class="card hidden" id="work-card">
-        <h2 data-i18n="workTitle">Проверка URL</h2>
-
-        <label class="field">
-          <span data-i18n="siteProperty">Свойство Search Console</span>
-          <select id="site-select">
-            <option value="" data-i18n="autoDetectSite">Автоопределение по URL</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span data-i18n="urlList">Список URL (по одному на строку)</span>
-          <textarea id="urls-input" class="urls-input" rows="10" spellcheck="false" data-i18n-placeholder="urlPlaceholder"></textarea>
-          <span class="field-hint hidden" id="urls-error" data-i18n="invalidUrls">В списке есть строки, которые не являются URL</span>
-        </label>
-
-        <div class="button-row">
-          <button class="btn btn-secondary" id="import-urls-btn" type="button" data-i18n="importUrls">Импортировать URL из файла</button>
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" id="tab-indexing-btn" type="button" role="tab" aria-selected="true" data-tab="indexing" data-i18n="tabIndexing">Индексация</button>
+          <button class="tab-btn" id="tab-audit-btn" type="button" role="tab" aria-selected="false" data-tab="audit" data-i18n="tabAudit">Аудит сайта</button>
         </div>
 
-        <div class="actions">
-          <button class="btn btn-primary" id="process-btn" type="button" data-i18n="processBtn">Проверить и запросить индексирование</button>
-        </div>
+        <div id="tab-indexing" class="tab-panel" role="tabpanel">
+          <h2 data-i18n="workTitle">Проверка URL</h2>
 
-        <div class="progress hidden" id="progress-panel">
-          <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill"></div>
+          <label class="field">
+            <span data-i18n="siteProperty">Свойство Search Console</span>
+            <select id="site-select">
+              <option value="" data-i18n="autoDetectSite">Автоопределение по URL</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span data-i18n="urlList">Список URL (по одному на строку)</span>
+            <textarea id="urls-input" class="urls-input" rows="10" spellcheck="false" data-i18n-placeholder="urlPlaceholder"></textarea>
+            <span class="field-hint hidden" id="urls-error" data-i18n="invalidUrls">В списке есть строки, которые не являются URL</span>
+          </label>
+
+          <div class="button-row">
+            <button class="btn btn-secondary" id="import-urls-btn" type="button" data-i18n="importUrls">Импортировать URL из файла</button>
           </div>
-          <p id="progress-text" data-i18n="waiting">Ожидание...</p>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="process-btn" type="button" data-i18n="processBtn">Проверить и запросить индексирование</button>
+          </div>
+
+          <div class="progress hidden" id="progress-panel">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text" data-i18n="waiting">Ожидание...</p>
+          </div>
+        </div>
+
+        <div id="tab-audit" class="tab-panel hidden" role="tabpanel">
+          <h2 data-i18n="auditTitle">Аудит сайта</h2>
+          <p class="hint" data-i18n="auditHint">Сбор данных Search Console и анализ через ваш OpenAI-compatible API-ключ.</p>
+
+          <label class="field">
+            <span data-i18n="siteProperty">Свойство Search Console</span>
+            <select id="audit-site-select">
+              <option value="" data-i18n="selectSite">Выберите свойство</option>
+            </select>
+          </label>
+
+          <div class="form-grid">
+            <label>
+              <span data-i18n="aiBaseUrl">AI base URL</span>
+              <input type="text" id="ai-base-url" data-i18n-placeholder="aiBaseUrlPlaceholder" placeholder="https://api.openai.com/v1" />
+            </label>
+            <label>
+              <span data-i18n="aiModel">Модель</span>
+              <input type="text" id="ai-model" data-i18n-placeholder="aiModelPlaceholder" placeholder="gpt-4o-mini" />
+            </label>
+            <label class="form-grid-full">
+              <span data-i18n="aiApiKey">API-ключ</span>
+              <input type="password" id="ai-api-key" data-i18n-placeholder="aiApiKeyPlaceholder" placeholder="Введите API-ключ" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="btn btn-secondary" id="save-ai-config-btn" type="button" data-i18n="saveAiSettings">Сохранить настройки ИИ</button>
+            <button class="btn btn-danger" id="clear-ai-key-btn" type="button" data-i18n="clearAiKey">Удалить ключ</button>
+          </div>
+          <p class="status-message" id="ai-config-message"></p>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="run-audit-btn" type="button" data-i18n="runAudit">Запустить аудит</button>
+          </div>
+
+          <div class="progress hidden" id="audit-progress-panel">
+            <div class="progress-bar">
+              <div class="progress-fill" id="audit-progress-fill"></div>
+            </div>
+            <p id="audit-progress-text" data-i18n="waiting">Ожидание...</p>
+          </div>
+
+          <div class="hidden" id="audit-results">
+            <h3 data-i18n="auditBaselineTitle">Baseline (28 / 90 дней)</h3>
+            <div class="summary" id="audit-summary"></div>
+            <h3 data-i18n="auditAnalysisTitle">Анализ ИИ</h3>
+            <div class="audit-report" id="audit-report"></div>
+            <button class="btn btn-secondary" id="export-audit-btn" type="button" data-i18n="exportAuditMd">Экспорт Markdown</button>
+          </div>
         </div>
       </section>
 

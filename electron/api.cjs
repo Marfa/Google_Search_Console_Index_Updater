@@ -174,6 +174,121 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function formatDateUtc(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+/** Last complete GSC day (data lag ~2–3 days). */
+function stableEndDate(now = new Date()) {
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  end.setUTCDate(end.getUTCDate() - 3);
+  return end;
+}
+
+function rangeEndingOn(endDate, days) {
+  const start = new Date(endDate.getTime());
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  return {
+    startDate: formatDateUtc(start),
+    endDate: formatDateUtc(endDate),
+  };
+}
+
+function encodeSiteUrl(siteUrl) {
+  return encodeURIComponent(siteUrl);
+}
+
+function mapMetricRow(row) {
+  if (!row) {
+    return { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+  }
+  return {
+    clicks: row.clicks || 0,
+    impressions: row.impressions || 0,
+    ctr: row.ctr || 0,
+    position: row.position || 0,
+  };
+}
+
+function mapDimensionRows(rows) {
+  return (rows || []).map((row) => ({
+    keys: row.keys || [],
+    ...mapMetricRow(row),
+  }));
+}
+
+async function searchAnalyticsQuery(client, siteUrl, body) {
+  const url = `${SEARCH_CONSOLE_BASE}/sites/${encodeSiteUrl(siteUrl)}/searchAnalytics/query`;
+  return apiRequest(client, url, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+async function listSitemaps(client, siteUrl) {
+  const url = `${SEARCH_CONSOLE_BASE}/sites/${encodeSiteUrl(siteUrl)}/sitemaps`;
+  const data = await apiRequest(client, url);
+  return (data.sitemap || []).map((entry) => ({
+    path: entry.path,
+    lastSubmitted: entry.lastSubmitted || null,
+    lastDownloaded: entry.lastDownloaded || null,
+    isPending: Boolean(entry.isPending),
+    isSitemapsIndex: Boolean(entry.isSitemapsIndex),
+    errors: Number(entry.errors || 0),
+    warnings: Number(entry.warnings || 0),
+  }));
+}
+
+async function collectAuditBaseline(client, siteUrl) {
+  const end = stableEndDate();
+  const range28 = rangeEndingOn(end, 28);
+  const range90 = rangeEndingOn(end, 90);
+
+  const [totals28, totals90, topQueries, topPages, sitemaps] = await Promise.all([
+    searchAnalyticsQuery(client, siteUrl, {
+      startDate: range28.startDate,
+      endDate: range28.endDate,
+      searchType: 'web',
+    }),
+    searchAnalyticsQuery(client, siteUrl, {
+      startDate: range90.startDate,
+      endDate: range90.endDate,
+      searchType: 'web',
+    }),
+    searchAnalyticsQuery(client, siteUrl, {
+      startDate: range28.startDate,
+      endDate: range28.endDate,
+      dimensions: ['query'],
+      rowLimit: 50,
+      searchType: 'web',
+    }),
+    searchAnalyticsQuery(client, siteUrl, {
+      startDate: range28.startDate,
+      endDate: range28.endDate,
+      dimensions: ['page'],
+      rowLimit: 50,
+      searchType: 'web',
+    }),
+    listSitemaps(client, siteUrl),
+  ]);
+
+  return {
+    siteUrl,
+    collectedAt: new Date().toISOString(),
+    windows: {
+      d28: range28,
+      d90: range90,
+    },
+    totals: {
+      d28: mapMetricRow(totals28.rows?.[0]),
+      d90: mapMetricRow(totals90.rows?.[0]),
+    },
+    topQueries: mapDimensionRows(topQueries.rows),
+    topPages: mapDimensionRows(topPages.rows),
+    sitemaps,
+  };
+}
+
 async function processUrls(client, urls, options = {}) {
   const { onProgress, selectedSiteUrl, delayMs = 1100 } = options;
   const sites = await listSites(client);
@@ -270,4 +385,10 @@ module.exports = {
   processUrls,
   findPropertyForUrl,
   urlBelongsToProperty,
+  searchAnalyticsQuery,
+  listSitemaps,
+  collectAuditBaseline,
+  stableEndDate,
+  rangeEndingOn,
+  formatDateUtc,
 };

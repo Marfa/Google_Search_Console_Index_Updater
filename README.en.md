@@ -2,13 +2,18 @@
 
 > **Русский:** [README.md](README.md)
 
-Portable app for **Windows** and **macOS** that inspects URLs via the [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) and requests indexing for pages that are not in the Google index.
+**URL indexing + Search Console SEO audit — with your own AI key.**
 
-**Source code:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
+```bash
+# macOS (Apple Silicon)
+# download Google-Search-Console-Updater-2.0.0-mac-arm64.zip from Releases
+xattr -cr "Google Search Console Updater.app"
+open "Google Search Console Updater.app"
+```
 
-**License:** [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+**Version:** 2.0.0 · **Source:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater) · **License:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-> This project is distributed under the CC BY-NC-SA 4.0 license. Commercial use without separate permission is not allowed.
+> Commercial use without separate permission is not allowed.
 
 ## Screenshot
 
@@ -16,127 +21,117 @@ Portable app for **Windows** and **macOS** that inspects URLs via the [Google Se
 
 ## Features
 
-- Sign in with a Google account that has Search Console access
-- Inspect a list of URLs via the URL Inspection API
-- Automatically request indexing for URLs that are not indexed
-- Import URLs from `.txt`, `.csv`, `.xls`, and `.xlsx` files
-- Export results to CSV
-- Russian / English UI, including the OAuth callback page
-- Auto-updates from [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases)
+| | |
+|---|---|
+| Indexing | URL Inspection + indexing requests for pages not in the index |
+| Site audit | Search Analytics baseline (28/90 days), sitemaps, AI report |
+| Your AI | OpenAI-compatible: OpenAI, Groq, xAI Grok, OpenRouter… |
+| Import / export | `.txt` `.csv` `.xls` `.xlsx` → CSV; audit → Markdown |
+| Language | RU / EN, including the OAuth callback |
+| Updates | Checks [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) |
 
 ## Download
 
-Portable builds are available in [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). See the release page for the current file names.
+Portable builds: [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases).
+
+| Platform | File |
+|----------|------|
+| macOS arm64 | `Google-Search-Console-Updater-2.0.0-mac-arm64.zip` |
+| Windows x64 | `Google-Search-Console-Updater-<version>-win-x64.zip` |
 
 ### Windows (x64)
 
-1. Download `Google-Search-Console-Updater-<version>-win-x64.zip`
-2. Unzip the archive
-3. Run `Google Search Console Updater.exe` from the extracted folder
+1. Download zip → unzip  
+2. Run `Google Search Console Updater.exe`  
 
-No installation required.
+No installer.
 
-### macOS (Apple Silicon, arm64)
+### macOS (Apple Silicon)
 
-1. Download `Google-Search-Console-Updater-<version>-mac-arm64.zip`
-2. Unzip the archive
-3. Open `Google Search Console Updater.app`
+1. Download zip → unzip  
+2. Open `Google Search Console Updater.app` (**Right-click → Open** on first launch)
 
-For an unsigned app on first launch: **Right-click → Open → Open**.
-
-### “App is damaged” error (macOS)
-
-If macOS says the app is damaged and **Privacy & Security** offers no “Open Anyway”, the `.app` has a broken ad-hoc signature (common with downloaded `.zip` builds). In Terminal:
+### “App is damaged” (macOS)
 
 ```bash
 xattr -cr "/path/to/Google Search Console Updater.app"
 codesign --force --deep --sign - "/path/to/Google Search Console Updater.app"
 ```
 
-Then launch via **Right-click → Open**. Builds from **v1.0.8** onward re-sign the bundle during packaging (`after-sign.cjs`). For older `.zip` files, use the Terminal commands above.
+From **v1.0.8**, packaging applies an ad-hoc signature (`after-sign.cjs`).
 
 ## Google Cloud setup
 
-Each user provides **their own** OAuth credentials. Secrets are not embedded in the app.
+Secrets are not embedded — each user enters their own OAuth credentials.
 
-1. Open [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project
-3. Enable APIs:
-   - [Google Search Console API](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com)
-   - [Web Search Indexing API](https://console.cloud.google.com/apis/library/indexing.googleapis.com)
-4. Create an **OAuth client ID** of type **Desktop app**
-5. Copy the **Client ID** and **Client Secret**
-6. In **Google Auth Platform → Audience**, add your Google email to **Test users**
+1. [Google Cloud Console](https://console.cloud.google.com/) → project  
+2. Enable [Search Console API](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) and [Indexing API](https://console.cloud.google.com/apis/library/indexing.googleapis.com)  
+3. OAuth client ID type **Desktop app** → Client ID / Secret  
+4. **Audience → Test users** — your Google email  
 
-### Error 403: access_denied
+### 403: access_denied
 
-While the OAuth app is in **Testing** mode, only emails listed in **Test users** can sign in:
-
-1. [Google Auth Platform → Audience](https://console.cloud.google.com/auth/audience)
-2. **Test users → Add users**
-3. Add the email you use for Search Console
+In Testing mode, only emails listed under [Audience → Test users](https://console.cloud.google.com/auth/audience) can sign in.
 
 ## How to use
 
-1. Enter Client ID and Client Secret → **Save settings**
-2. **Sign in with Google**
-3. Paste your URL list (one per line) or click **Import URLs from file**
-4. Click **Inspect and request indexing**
-5. Review results and export CSV if needed
+### Indexing
 
-**Reset settings** removes saved OAuth credentials and tokens from your device.
+1. Client ID / Secret → **Save settings**  
+2. **Sign in with Google**  
+3. Paste URLs or **Import URLs from file**  
+4. **Inspect and request indexing** → export CSV if needed  
 
-## Publishing the OAuth app for other users
+### Site audit
 
-### Option 1: Up to 100 users (no publishing)
+1. **Site audit** tab → Search Console property  
+2. AI base URL, model, API key → **Save AI settings**  
+3. **Run audit** → baseline + rendered report → export Markdown  
 
-Add each user's email in **Audience → Test users**. Good for small teams.
+The key is stored locally (`safeStorage`), same as OAuth.
 
-### Option 2: Public access (Publish app)
+#### AI provider examples
 
-1. Fill in **Branding** (app name, support email)
-2. Add scopes in **Data Access**
-3. Click **Publish app** in **Audience**
+| Provider | AI base URL | Example model | Key |
+|----------|-------------|---------------|-----|
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | [platform.openai.com](https://platform.openai.com/) |
+| Groq | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | `gsk_…` key |
+| xAI Grok | `https://api.x.ai/v1` | `grok-4.6` | [console.x.ai](https://console.x.ai/) (`xai-…`) |
 
-The `webmasters` and `indexing` scopes are sensitive. Google will likely require **verification**:
+> A env name like `GROK_API` does not mean xAI: a `gsk_…` key is Groq.
 
-- app website, privacy policy, terms of service;
-- justification for each scope;
-- OAuth flow demonstration;
-- application in **Verification Center**.
+**Reset settings** removes OAuth credentials and tokens from the device.
 
-Verification can take from several days to weeks.
+## Publishing OAuth for others
 
-### Option 3: Each user with their own OAuth (recommended)
-
-Each user creates their own Google Cloud project, enters their Client ID / Secret in the app, and adds their email to Test users. No publishing required.
+| Option | When |
+|--------|------|
+| Test users (up to 100) | Team use, no publish |
+| Publish app | Public access; sensitive scopes → Google verification |
+| Each user with own OAuth | Recommended: own Cloud project, no publish |
 
 ## Auto-update
 
-The packaged app checks [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) on startup. When a new version is available, it downloads the `.zip` and shows an **Install and restart** button. You can also check manually from **About**.
-
-> On unsigned macOS builds, auto-install may fail. Use **Download manually** in the update banner, or download the `.zip` from Releases and replace the `.app`. On Windows, download the new `.zip`, unzip it, and replace the app folder.
+On launch the app checks [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). Without Apple signing on macOS, use **Download manually** more often.
 
 ## Data storage
 
-Credentials are **not stored in source code**. Locally on the user's device:
-
-| Data | Path (Windows) | Path (macOS) |
-|------|----------------|--------------|
+| Data | Windows | macOS |
+|------|---------|-------|
 | OAuth Client ID / Secret | `%APPDATA%\Google Search Console Updater\oauth-config.json` | `~/Library/Application Support/Google Search Console Updater/oauth-config.json` |
-| Auth tokens | `%APPDATA%\Google Search Console Updater\tokens.json` | `~/Library/Application Support/Google Search Console Updater/tokens.json` |
-| UI language | `%APPDATA%\Google Search Console Updater\settings.json` | `~/Library/Application Support/Google Search Console Updater/settings.json` |
+| Tokens | `…\tokens.json` | `…/tokens.json` |
+| AI API key | `…\ai-config.json` | `…/ai-config.json` |
+| Locale / AI URL / model | `…\settings.json` | `…/settings.json` |
 
-## Build from source
+## Build
 
 ```bash
 npm install
 npm start
-npm run build:mac   # macOS (arm64)
-npm run build:win   # Windows (x64)
+npm run build:mac   # → dist/Google-Search-Console-Updater-2.0.0-mac-arm64.zip
+npm run build:win
+npm run check:audit-helpers
 ```
-
-Artifacts are written to `dist/`.
 
 ## API limits
 
@@ -151,20 +146,19 @@ Artifacts are written to `dist/`.
 - [Donate](https://www.donationalerts.com/r/themarfa)
 - [Crypto donation](https://nowpayments.io/donation/themarfa)
 
-## Project structure
+## Structure
 
 ```
-├── electron/       # Main process, OAuth, API, auto-update, URL import
-│   ├── url-import.cjs
-│   └── ...
-├── renderer/       # UI, i18n
-├── scripts/        # after-pack, after-sign
-├── build/          # App icon
+├── electron/       # OAuth, GSC API, AI client, audit, auto-update
+├── renderer/       # UI, Indexing / Audit tabs, i18n
+├── scripts/        # build hooks, check-audit-helpers
+├── build/          # app icon
 ├── config.example.json
-├── LICENSE
 └── package.json
 ```
 
 ## About
 
-This code was prepared with [Cursor](https://cursor.com/) — an AI-powered code editor.
+This code was prepared with [Cursor](https://cursor.com/).
+
+Support the project: [Donate](https://www.donationalerts.com/r/themarfa) · [Crypto donation](https://nowpayments.io/donation/themarfa)

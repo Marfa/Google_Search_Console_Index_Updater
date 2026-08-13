@@ -5,6 +5,8 @@ const { pathToFileURL } = require('url');
 const auth = require('./auth.cjs');
 const api = require('./api.cjs');
 const settings = require('./settings.cjs');
+const aiConfig = require('./ai-config.cjs');
+const { analyzeAuditBaseline, normalizeBaseUrl, assertAllowedAiBaseUrl } = require('./ai-client.cjs');
 const { extractUrlsFromFile } = require('./url-import.cjs');
 const {
   initAutoUpdater,
@@ -361,6 +363,120 @@ ipcMain.handle('urls:process', async (event, payload) => {
   } catch (error) {
     throw new Error(formatError(error));
   }
+});
+
+ipcMain.handle('ai:get-config', async (event) => {
+  assertTrustedSender(event);
+  const saved = settings.loadSettings();
+  return {
+    baseUrl: saved.aiBaseUrl || settings.DEFAULT_AI_BASE_URL,
+    model: saved.aiModel || settings.DEFAULT_AI_MODEL,
+    hasApiKey: aiConfig.hasApiKey(),
+  };
+});
+
+ipcMain.handle('ai:save-config', async (event, config) => {
+  assertTrustedSender(event);
+  try {
+    const baseUrl = normalizeBaseUrl(config?.baseUrl || '');
+    assertAllowedAiBaseUrl(baseUrl);
+    const model = typeof config?.model === 'string' ? config.model.trim() : '';
+    if (!model) {
+      throw new Error(appMessage('aiConfigRequired'));
+    }
+
+    settings.saveSettings({ aiBaseUrl: baseUrl, aiModel: model });
+
+    const apiKey = typeof config?.apiKey === 'string' ? config.apiKey.trim() : '';
+    if (apiKey) {
+      aiConfig.saveApiKey(apiKey);
+    } else if (!aiConfig.hasApiKey()) {
+      throw new Error(appMessage('aiKeyRequired'));
+    }
+
+    return {
+      success: true,
+      config: {
+        baseUrl,
+        model,
+        hasApiKey: aiConfig.hasApiKey(),
+      },
+    };
+  } catch (error) {
+    throw new Error(formatError(error));
+  }
+});
+
+ipcMain.handle('ai:clear-key', async (event) => {
+  assertTrustedSender(event);
+  aiConfig.clearApiKey();
+  return { success: true, hasApiKey: false };
+});
+
+ipcMain.handle('audit:run', async (event, payload) => {
+  assertTrustedSender(event);
+  try {
+    const client = await auth.getAuthenticatedClient();
+    if (!client) {
+      throw new Error(appMessage('authRequired'));
+    }
+
+    const siteUrl = typeof payload?.siteUrl === 'string' ? payload.siteUrl.trim() : '';
+    if (!siteUrl) {
+      throw new Error(appMessage('siteRequired'));
+    }
+
+    const saved = settings.loadSettings();
+    const baseUrl = saved.aiBaseUrl || settings.DEFAULT_AI_BASE_URL;
+    const model = saved.aiModel || settings.DEFAULT_AI_MODEL;
+    const apiKey = aiConfig.getApiKey();
+    if (!apiKey) {
+      throw new Error(appMessage('aiKeyRequired'));
+    }
+
+    const sendProgress = (phase) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('audit:progress', { phase });
+      }
+    };
+
+    sendProgress('collecting');
+    const baseline = await api.collectAuditBaseline(client, siteUrl);
+
+    sendProgress('analyzing');
+    const analysis = await analyzeAuditBaseline({
+      baseUrl,
+      apiKey,
+      model,
+      baseline,
+      locale: saved.locale,
+    });
+
+    sendProgress('done');
+    return { baseline, analysis };
+  } catch (error) {
+    throw new Error(formatError(error));
+  }
+});
+
+ipcMain.handle('audit:export', async (event, payload) => {
+  assertTrustedSender(event);
+  const markdown = typeof payload?.markdown === 'string' ? payload.markdown : '';
+  if (!markdown.trim()) {
+    throw new Error('Report is empty');
+  }
+
+  const result = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: `gsc-audit-${new Date().toISOString().slice(0, 10)}.md`,
+    filters: [{ name: 'Markdown', extensions: ['md'] }],
+  });
+
+  if (result.canceled || !result.filePath) {
+    return { canceled: true };
+  }
+
+  fs.writeFileSync(result.filePath, markdown, 'utf8');
+  return { canceled: false, filePath: result.filePath };
 });
 
 ipcMain.handle('shell:open-external', async (event, url) => {

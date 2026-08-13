@@ -2,13 +2,18 @@
 
 > **English:** [README.en.md](README.en.md)
 
-Portable-приложение для **Windows** и **macOS**. Проверяет URL через [Google Search Console URL Inspection API](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) и запрашивает индексирование для страниц, которых нет в индексе.
+**Индексация URL + SEO-аудит по данным Search Console — с вашим AI-ключом.**
 
-**Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater)
+```bash
+# macOS (Apple Silicon)
+# скачайте Google-Search-Console-Updater-2.0.0-mac-arm64.zip из Releases
+xattr -cr "Google Search Console Updater.app"
+open "Google Search Console Updater.app"
+```
 
-**Лицензия:** [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+**Версия:** 2.0.0 · **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater) · **Лицензия:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-> Проект распространяется по лицензии CC BY-NC-SA 4.0. Коммерческое использование без отдельного согласования не допускается.
+> Коммерческое использование без отдельного согласования не допускается.
 
 ## Скриншот
 
@@ -16,127 +21,117 @@ Portable-приложение для **Windows** и **macOS**. Проверяе�
 
 ## Возможности
 
-- Авторизация через Google-аккаунт с доступом к Search Console
-- Проверка списка URL через URL Inspection API
-- Автоматический запрос индексирования для URL, которых нет в индексе
-- Импорт URL из файлов `.txt`, `.csv`, `.xls`, `.xlsx`
-- Экспорт результатов в CSV
-- Переключение языка интерфейса (русский / английский), включая страницу OAuth callback
-- Автообновление из [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases)
+| | |
+|---|---|
+| Индексация | URL Inspection + запрос индексирования для страниц вне индекса |
+| Аудит сайта | Baseline Search Analytics (28/90 дней), sitemaps, ИИ-отчёт |
+| Ваш AI | OpenAI-compatible: OpenAI, Groq, xAI Grok, OpenRouter… |
+| Импорт / экспорт | `.txt` `.csv` `.xls` `.xlsx` → CSV; аудит → Markdown |
+| Язык | RU / EN, включая OAuth callback |
+| Обновления | Автопроверка [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) |
 
 ## Скачивание
 
-Готовые portable-сборки доступны в [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). Актуальные имена файлов указаны на странице релиза.
+Готовые portable-сборки: [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases).
+
+| Платформа | Файл |
+|-----------|------|
+| macOS arm64 | `Google-Search-Console-Updater-2.0.0-mac-arm64.zip` |
+| Windows x64 | `Google-Search-Console-Updater-<версия>-win-x64.zip` |
 
 ### Windows (x64)
 
-1. Скачайте `Google-Search-Console-Updater-<версия>-win-x64.zip`
-2. Распакуйте архив
-3. Запустите `Google Search Console Updater.exe` из распакованной папки
+1. Скачайте zip → распакуйте  
+2. Запустите `Google Search Console Updater.exe`  
 
-Установка не требуется.
+Установка не нужна.
 
-### macOS (Apple Silicon, arm64)
+### macOS (Apple Silicon)
 
-1. Скачайте `Google-Search-Console-Updater-<версия>-mac-arm64.zip`
-2. Распакуйте архив
-3. Откройте `Google Search Console Updater.app`
-
-При первом запуске неподписанного приложения: **ПКМ → Открыть → Открыть**.
+1. Скачайте zip → распакуйте  
+2. Откройте `Google Search Console Updater.app` (**ПКМ → Открыть** при первом запуске)
 
 ### Ошибка «приложение повреждено» (macOS)
-
-Если macOS пишет, что приложение повреждено и в **Конфиденциальность и безопасность** нет кнопки «Всё равно открыть», у `.app` сломана подпись (типично для скачанного `.zip`). В Terminal:
 
 ```bash
 xattr -cr "/путь/к/Google Search Console Updater.app"
 codesign --force --deep --sign - "/путь/к/Google Search Console Updater.app"
 ```
 
-После этого запустите через **ПКМ → Открыть**. Начиная с **v1.0.8** сборки получают корректную ad-hoc подпись при упаковке (`after-sign.cjs`). Для более старых `.zip` используйте команды выше.
+С **v1.0.8** ad-hoc подпись ставится при сборке (`after-sign.cjs`).
 
 ## Настройка Google Cloud
 
-Каждый пользователь использует **свои** OAuth-учётные данные. Секреты не встроены в приложение.
+Секреты не вшиты — каждый пользователь вводит свои OAuth-данные.
 
-1. Откройте [Google Cloud Console](https://console.cloud.google.com/)
-2. Создайте проект
-3. Включите API:
-   - [Google Search Console API](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com)
-   - [Web Search Indexing API](https://console.cloud.google.com/apis/library/indexing.googleapis.com)
-4. Создайте **OAuth client ID** типа **Desktop app**
-5. Скопируйте **Client ID** и **Client Secret**
-6. В **Google Auth Platform → Audience** добавьте свой Google-email в **Test users**
+1. [Google Cloud Console](https://console.cloud.google.com/) → проект  
+2. Включите API: [Search Console](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) и [Indexing](https://console.cloud.google.com/apis/library/indexing.googleapis.com)  
+3. OAuth client ID типа **Desktop app** → Client ID / Secret  
+4. **Audience → Test users** — ваш Google-email  
 
-### Ошибка 403: access_denied
+### 403: access_denied
 
-Пока OAuth-приложение в режиме **Testing**, войти могут только email из **Test users**:
-
-1. [Google Auth Platform → Audience](https://console.cloud.google.com/auth/audience)
-2. **Test users → Add users**
-3. Добавьте email, с которым входите в Search Console
+В режиме Testing войдут только email из [Audience → Test users](https://console.cloud.google.com/auth/audience).
 
 ## Как пользоваться
 
-1. Введите Client ID и Client Secret → **Сохранить настройки**
-2. **Войти в Google**
-3. Вставьте список URL (по одному на строку) или нажмите **Импортировать URL из файла**
-4. Нажмите **Проверить и запросить индексирование**
-5. Просмотрите результаты и при необходимости экспортируйте CSV
+### Индексация
 
-Кнопка **Сбросить настройки** удаляет сохранённые OAuth-данные и токены с устройства.
+1. Client ID / Secret → **Сохранить настройки**  
+2. **Войти в Google**  
+3. Список URL или **Импортировать URL из файла**  
+4. **Проверить и запросить индексирование** → CSV при необходимости  
 
-## Публикация OAuth-приложения для других пользователей
+### Аудит сайта
 
-### Вариант 1: До 100 пользователей (без публикации)
+1. Вкладка **Аудит сайта** → свойство Search Console  
+2. AI base URL, модель, API-ключ → **Сохранить настройки ИИ**  
+3. **Запустить аудит** → baseline + разметка отчёта → экспорт Markdown  
 
-Добавляйте email каждого пользователя в **Audience → Test users**. Подходит для команды.
+Ключ хранится локально (`safeStorage`), как OAuth.
 
-### Вариант 2: Публичный доступ (Publish app)
+#### Примеры AI-провайдеров
 
-1. Заполните **Branding** (название, email поддержки)
-2. Добавьте scopes в **Data Access**
-3. Нажмите **Publish app** в **Audience**
+| Провайдер | AI base URL | Пример модели | Ключ |
+|-----------|-------------|---------------|------|
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | [platform.openai.com](https://platform.openai.com/) |
+| Groq | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | ключ `gsk_…` |
+| xAI Grok | `https://api.x.ai/v1` | `grok-4.6` | [console.x.ai](https://console.x.ai/) (`xai-…`) |
 
-Scopes `webmasters` и `indexing` — чувствительные. Google, скорее всего, потребует **верификацию**:
+> Имя переменной вроде `GROK_API` не значит xAI: ключ `gsk_…` — это Groq.
 
-- сайт приложения, privacy policy, terms of service;
-- описание зачем нужен каждый scope;
-- демонстрация OAuth-потока;
-- заявка в **Verification Center**.
+**Сбросить настройки** удаляет OAuth-данные и токены с устройства.
 
-Срок верификации — от нескольких дней до недель.
+## Публикация OAuth для других
 
-### Вариант 3: Каждый пользователь со своим OAuth (рекомендуется)
-
-Пользователь создаёт свой проект Google Cloud, вводит свои Client ID / Secret в приложение и добавляет свой email в Test users. Публикация не требуется.
+| Вариант | Когда |
+|---------|--------|
+| Test users (до 100) | Команда, без публикации |
+| Publish app | Публичный доступ; scopes чувствительные → верификация Google |
+| Свой OAuth у каждого | Рекомендуется: свой Cloud-проект, без publish |
 
 ## Автообновление
 
-Упакованное приложение при запуске проверяет [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). При наличии новой версии загружает `.zip` и показывает кнопку **«Установить и перезапустить»**. Также можно проверить обновления вручную через **О программе**.
-
-> На macOS без подписи Apple Developer автоустановка может не сработать. В этом случае нажмите **«Скачать вручную»** в баннере обновления или скачайте `.zip` из Releases и замените `.app`. На Windows скачайте новый `.zip`, распакуйте и замените папку с приложением.
+При запуске проверяются [Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases). Без подписи Apple на macOS чаще нужен **Скачать вручную**.
 
 ## Хранение данных
 
-Учётные данные **не хранятся в исходном коде**. Локально на устройстве пользователя:
-
-| Данные | Путь (Windows) | Путь (macOS) |
-|--------|----------------|--------------|
+| Данные | Windows | macOS |
+|--------|---------|-------|
 | OAuth Client ID / Secret | `%APPDATA%\Google Search Console Updater\oauth-config.json` | `~/Library/Application Support/Google Search Console Updater/oauth-config.json` |
-| Токены авторизации | `%APPDATA%\Google Search Console Updater\tokens.json` | `~/Library/Application Support/Google Search Console Updater/tokens.json` |
-| Язык интерфейса | `%APPDATA%\Google Search Console Updater\settings.json` | `~/Library/Application Support/Google Search Console Updater/settings.json` |
+| Токены | `…\tokens.json` | `…/tokens.json` |
+| API-ключ ИИ | `…\ai-config.json` | `…/ai-config.json` |
+| Язык / AI URL / модель | `…\settings.json` | `…/settings.json` |
 
-## Сборка из исходников
+## Сборка
 
 ```bash
 npm install
 npm start
-npm run build:mac   # macOS (arm64)
-npm run build:win   # Windows (x64)
+npm run build:mac   # → dist/Google-Search-Console-Updater-2.0.0-mac-arm64.zip
+npm run build:win
+npm run check:audit-helpers
 ```
-
-Артефакты появятся в `dist/`.
 
 ## Лимиты API
 
@@ -151,20 +146,19 @@ npm run build:win   # Windows (x64)
 - [Донат](https://www.donationalerts.com/r/themarfa)
 - [Донат криптой](https://nowpayments.io/donation/themarfa)
 
-## Структура проекта
+## Структура
 
 ```
-├── electron/       # Main process, OAuth, API, автообновление, импорт URL
-│   ├── url-import.cjs
-│   └── ...
-├── renderer/       # UI, i18n
-├── scripts/        # after-pack, after-sign
-├── build/          # Иконка приложения
+├── electron/       # OAuth, GSC API, AI client, audit, auto-update
+├── renderer/       # UI, вкладки Индексация / Аудит, i18n
+├── scripts/        # build hooks, check-audit-helpers
+├── build/          # иконка
 ├── config.example.json
-├── LICENSE
 └── package.json
 ```
 
 ## О проекте
 
-Код подготовлен с помощью [Cursor](https://cursor.com/) — AI-редактора для разработки программного обеспечения.
+Код подготовлен с помощью [Cursor](https://cursor.com/).
+
+Поддержка проекта: [Донат](https://www.donationalerts.com/r/themarfa) · [Донат криптой](https://nowpayments.io/donation/themarfa)

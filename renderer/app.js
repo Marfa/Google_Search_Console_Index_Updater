@@ -7,11 +7,16 @@ const state = {
   sites: [],
   results: [],
   processing: false,
+  auditing: false,
+  activeTab: 'indexing',
+  auditBaseline: null,
+  auditAnalysis: '',
   loggingIn: false,
   about: null,
   setupCollapsed: false,
   updateStatus: null,
   hasClientSecret: false,
+  hasAiApiKey: false,
 };
 
 const elements = {
@@ -41,12 +46,17 @@ const elements = {
   aboutUpdateStatus: document.getElementById('about-update-status'),
   workCard: document.getElementById('work-card'),
   resultsCard: document.getElementById('results-card'),
+  tabIndexingBtn: document.getElementById('tab-indexing-btn'),
+  tabAuditBtn: document.getElementById('tab-audit-btn'),
+  tabIndexing: document.getElementById('tab-indexing'),
+  tabAudit: document.getElementById('tab-audit'),
   clientId: document.getElementById('client-id'),
   clientSecret: document.getElementById('client-secret'),
   saveConfigBtn: document.getElementById('save-config-btn'),
   resetConfigBtn: document.getElementById('reset-config-btn'),
   configMessage: document.getElementById('config-message'),
   siteSelect: document.getElementById('site-select'),
+  auditSiteSelect: document.getElementById('audit-site-select'),
   urlsInput: document.getElementById('urls-input'),
   urlsError: document.getElementById('urls-error'),
   importUrlsBtn: document.getElementById('import-urls-btn'),
@@ -57,6 +67,20 @@ const elements = {
   summary: document.getElementById('summary'),
   resultsBody: document.getElementById('results-body'),
   exportBtn: document.getElementById('export-btn'),
+  aiBaseUrl: document.getElementById('ai-base-url'),
+  aiModel: document.getElementById('ai-model'),
+  aiApiKey: document.getElementById('ai-api-key'),
+  saveAiConfigBtn: document.getElementById('save-ai-config-btn'),
+  clearAiKeyBtn: document.getElementById('clear-ai-key-btn'),
+  aiConfigMessage: document.getElementById('ai-config-message'),
+  runAuditBtn: document.getElementById('run-audit-btn'),
+  auditProgressPanel: document.getElementById('audit-progress-panel'),
+  auditProgressFill: document.getElementById('audit-progress-fill'),
+  auditProgressText: document.getElementById('audit-progress-text'),
+  auditResults: document.getElementById('audit-results'),
+  auditSummary: document.getElementById('audit-summary'),
+  auditReport: document.getElementById('audit-report'),
+  exportAuditBtn: document.getElementById('export-audit-btn'),
   setupLink: document.getElementById('setup-link'),
   testUsersLink: document.getElementById('test-users-link'),
   enableSearchConsoleApi: document.getElementById('enable-search-console-api'),
@@ -72,8 +96,46 @@ function setConfigMessage(text, type = '') {
   elements.configMessage.className = `status-message ${type}`.trim();
 }
 
+function setAiConfigMessage(text, type = '') {
+  elements.aiConfigMessage.textContent = text;
+  elements.aiConfigMessage.className = `status-message ${type}`.trim();
+}
+
+function formatPercent(value) {
+  return `${((Number(value) || 0) * 100).toFixed(2)}%`;
+}
+
+function formatPosition(value) {
+  return (Number(value) || 0).toFixed(1);
+}
+
+function setActiveTab(tab) {
+  state.activeTab = tab === 'audit' ? 'audit' : 'indexing';
+  const isAudit = state.activeTab === 'audit';
+
+  elements.tabIndexingBtn.classList.toggle('active', !isAudit);
+  elements.tabAuditBtn.classList.toggle('active', isAudit);
+  elements.tabIndexingBtn.setAttribute('aria-selected', String(!isAudit));
+  elements.tabAuditBtn.setAttribute('aria-selected', String(isAudit));
+  elements.tabIndexing.classList.toggle('hidden', isAudit);
+  elements.tabAudit.classList.toggle('hidden', !isAudit);
+
+  if (isAudit) {
+    elements.resultsCard.classList.add('hidden');
+  } else if (state.results.length > 0) {
+    elements.resultsCard.classList.remove('hidden');
+  }
+}
+
 function formatError(error) {
-  return error?.message || String(error);
+  let message = error?.message || String(error);
+  const ipcMatch = message.match(
+    /Error invoking remote method '[^']+': (?:Error: )?([\s\S]+)/
+  );
+  if (ipcMatch) {
+    message = ipcMatch[1].trim();
+  }
+  return message;
 }
 
 function isValidUrl(value) {
@@ -289,6 +351,7 @@ function updateAuthUi(auth) {
     elements.cancelLoginBtn.classList.add('hidden');
     elements.logoutBtn.classList.remove('hidden');
     elements.workCard.classList.remove('hidden');
+    setActiveTab(state.activeTab);
   } else {
     elements.authStatus.textContent = '';
     elements.authStatus.classList.add('hidden');
@@ -300,28 +363,193 @@ function updateAuthUi(auth) {
     elements.logoutBtn.classList.add('hidden');
     elements.workCard.classList.add('hidden');
     elements.resultsCard.classList.add('hidden');
+    elements.auditResults.classList.add('hidden');
+    state.auditBaseline = null;
+    state.auditAnalysis = '';
   }
 }
 
 function renderSites() {
   const selected = elements.siteSelect.value;
+  const auditSelected = elements.auditSiteSelect.value;
+
   elements.siteSelect.replaceChildren();
+  elements.auditSiteSelect.replaceChildren();
 
   const autoOption = document.createElement('option');
   autoOption.value = '';
   autoOption.textContent = t('autoDetectSite');
   elements.siteSelect.appendChild(autoOption);
 
+  const auditPlaceholder = document.createElement('option');
+  auditPlaceholder.value = '';
+  auditPlaceholder.textContent = t('selectSite');
+  elements.auditSiteSelect.appendChild(auditPlaceholder);
+
   for (const site of state.sites) {
     const option = document.createElement('option');
     option.value = site.siteUrl;
     option.textContent = `${site.siteUrl} (${site.permissionLevel})`;
     elements.siteSelect.appendChild(option);
+
+    const auditOption = document.createElement('option');
+    auditOption.value = site.siteUrl;
+    auditOption.textContent = `${site.siteUrl} (${site.permissionLevel})`;
+    elements.auditSiteSelect.appendChild(auditOption);
   }
 
   if (selected) {
     elements.siteSelect.value = selected;
   }
+  if (auditSelected) {
+    elements.auditSiteSelect.value = auditSelected;
+  }
+}
+
+function applyAiConfig(config) {
+  if (config.baseUrl) {
+    elements.aiBaseUrl.value = config.baseUrl;
+  }
+  if (config.model) {
+    elements.aiModel.value = config.model;
+  }
+  state.hasAiApiKey = Boolean(config.hasApiKey);
+  elements.aiApiKey.value = '';
+  elements.aiApiKey.placeholder = state.hasAiApiKey
+    ? t('aiApiKeySavedPlaceholder')
+    : t('aiApiKeyPlaceholder');
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatInlineMarkdown(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
+}
+
+/** Escape HTML first, then apply a narrow markdown subset (no raw HTML from the model). */
+function renderSafeMarkdown(markdown) {
+  const lines = escapeHtml(markdown || '').split('\n');
+  const html = [];
+  let inUl = false;
+  let inOl = false;
+
+  const closeLists = () => {
+    if (inUl) {
+      html.push('</ul>');
+      inUl = false;
+    }
+    if (inOl) {
+      html.push('</ol>');
+      inOl = false;
+    }
+  };
+
+  for (const line of lines) {
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
+    if (heading) {
+      closeLists();
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${formatInlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    const ordered = line.match(/^\d+\.\s+(.+)$/);
+    if (ordered) {
+      if (inUl) {
+        html.push('</ul>');
+        inUl = false;
+      }
+      if (!inOl) {
+        html.push('<ol>');
+        inOl = true;
+      }
+      html.push(`<li>${formatInlineMarkdown(ordered[1])}</li>`);
+      continue;
+    }
+
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      if (inOl) {
+        html.push('</ol>');
+        inOl = false;
+      }
+      if (!inUl) {
+        html.push('<ul>');
+        inUl = true;
+      }
+      html.push(`<li>${formatInlineMarkdown(bullet[1])}</li>`);
+      continue;
+    }
+
+    if (!line.trim()) {
+      closeLists();
+      continue;
+    }
+
+    closeLists();
+    html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+  }
+
+  closeLists();
+  return html.join('');
+}
+
+function renderAuditResults(baseline, analysis) {
+  state.auditBaseline = baseline;
+  state.auditAnalysis = analysis || '';
+
+  const d28 = baseline?.totals?.d28 || {};
+  const d90 = baseline?.totals?.d90 || {};
+
+  elements.auditSummary.replaceChildren(
+    createSummaryItem(Math.round(d28.clicks || 0), t('auditClicks28')),
+    createSummaryItem(Math.round(d28.impressions || 0), t('auditImpressions28')),
+    createSummaryItem(formatPercent(d28.ctr), t('auditCtr28')),
+    createSummaryItem(formatPosition(d28.position), t('auditPosition28')),
+    createSummaryItem(Math.round(d90.clicks || 0), t('auditClicks90')),
+    createSummaryItem(Math.round(d90.impressions || 0), t('auditImpressions90'))
+  );
+
+  elements.auditReport.innerHTML = renderSafeMarkdown(analysis || '');
+  elements.auditResults.classList.remove('hidden');
+}
+
+function buildAuditMarkdown(baseline, analysis) {
+  const siteUrl = baseline?.siteUrl || '';
+  const windows = baseline?.windows || {};
+  const d28 = baseline?.totals?.d28 || {};
+  const d90 = baseline?.totals?.d90 || {};
+  return [
+    `# Search Console audit: ${siteUrl}`,
+    '',
+    `Collected: ${baseline?.collectedAt || ''}`,
+    `28d window: ${windows.d28?.startDate || ''} … ${windows.d28?.endDate || ''}`,
+    `90d window: ${windows.d90?.startDate || ''} … ${windows.d90?.endDate || ''}`,
+    '',
+    '## Baseline',
+    '',
+    `| Metric | 28d | 90d |`,
+    `| --- | --- | --- |`,
+    `| Clicks | ${Math.round(d28.clicks || 0)} | ${Math.round(d90.clicks || 0)} |`,
+    `| Impressions | ${Math.round(d28.impressions || 0)} | ${Math.round(d90.impressions || 0)} |`,
+    `| CTR | ${formatPercent(d28.ctr)} | ${formatPercent(d90.ctr)} |`,
+    `| Position | ${formatPosition(d28.position)} | ${formatPosition(d90.position)} |`,
+    '',
+    '## AI analysis',
+    '',
+    analysis || '',
+    '',
+  ].join('\n');
 }
 
 function renderResults(results) {
@@ -542,8 +770,16 @@ async function switchLocale(locale) {
   });
   renderSites();
   updateUrlInputState();
+  applyAiConfig({
+    baseUrl: elements.aiBaseUrl.value,
+    model: elements.aiModel.value,
+    hasApiKey: state.hasAiApiKey,
+  });
   if (state.results.length > 0) {
     renderResults(state.results);
+  }
+  if (state.auditBaseline) {
+    renderAuditResults(state.auditBaseline, state.auditAnalysis);
   }
   if (state.updateStatus) {
     handleUpdateStatus(state.updateStatus);
@@ -618,6 +854,9 @@ async function loadInitialState() {
 
   const config = await window.searchUpdater.getAuthConfig();
   applyAuthConfig(config);
+
+  const aiConfig = await window.searchUpdater.getAiConfig();
+  applyAiConfig(aiConfig);
 
   const auth = await window.searchUpdater.getAuthStatus();
   updateAuthUi(auth);
@@ -790,6 +1029,94 @@ elements.processBtn.addEventListener('click', async () => {
 });
 
 elements.exportBtn.addEventListener('click', exportCsv);
+
+elements.tabIndexingBtn.addEventListener('click', () => setActiveTab('indexing'));
+elements.tabAuditBtn.addEventListener('click', () => setActiveTab('audit'));
+
+elements.saveAiConfigBtn.addEventListener('click', async () => {
+  try {
+    const result = await window.searchUpdater.saveAiConfig({
+      baseUrl: elements.aiBaseUrl.value,
+      model: elements.aiModel.value,
+      apiKey: elements.aiApiKey.value,
+    });
+    if (result.config) {
+      applyAiConfig(result.config);
+    }
+    setAiConfigMessage(t('aiSettingsSaved'), 'success');
+  } catch (error) {
+    setAiConfigMessage(formatError(error), 'error');
+  }
+});
+
+elements.clearAiKeyBtn.addEventListener('click', async () => {
+  if (!window.confirm(t('clearAiKeyConfirm'))) {
+    return;
+  }
+  try {
+    await window.searchUpdater.clearAiKey();
+    state.hasAiApiKey = false;
+    elements.aiApiKey.value = '';
+    elements.aiApiKey.placeholder = t('aiApiKeyPlaceholder');
+    setAiConfigMessage(t('aiKeyCleared'), 'success');
+  } catch (error) {
+    setAiConfigMessage(formatError(error), 'error');
+  }
+});
+
+elements.runAuditBtn.addEventListener('click', async () => {
+  if (state.auditing) {
+    return;
+  }
+
+  const siteUrl = elements.auditSiteSelect.value;
+  if (!siteUrl) {
+    setAiConfigMessage(t('selectSiteFirst'), 'error');
+    return;
+  }
+
+  if (!state.hasAiApiKey) {
+    setAiConfigMessage(t('saveAiFirst'), 'error');
+    return;
+  }
+
+  state.auditing = true;
+  elements.runAuditBtn.disabled = true;
+  elements.auditResults.classList.add('hidden');
+  elements.auditProgressPanel.classList.remove('hidden');
+  elements.auditProgressFill.style.width = '15%';
+  elements.auditProgressText.textContent = t('auditCollecting');
+  setAiConfigMessage('', '');
+
+  try {
+    const result = await window.searchUpdater.runAudit({ siteUrl });
+    elements.auditProgressFill.style.width = '100%';
+    elements.auditProgressText.textContent = t('auditDone');
+    renderAuditResults(result.baseline, result.analysis);
+    elements.auditProgressPanel.classList.add('hidden');
+  } catch (error) {
+    const message = formatError(error);
+    setAiConfigMessage(message, 'error');
+    elements.auditProgressText.textContent = message;
+  } finally {
+    state.auditing = false;
+    elements.runAuditBtn.disabled = false;
+  }
+});
+
+elements.exportAuditBtn.addEventListener('click', async () => {
+  if (!state.auditBaseline || !state.auditAnalysis) {
+    return;
+  }
+  try {
+    await window.searchUpdater.exportAudit({
+      markdown: buildAuditMarkdown(state.auditBaseline, state.auditAnalysis),
+    });
+  } catch (error) {
+    setAiConfigMessage(formatError(error), 'error');
+  }
+});
+
 elements.aboutBtn.addEventListener('click', () => {
   if (state.updateStatus) {
     handleUpdateStatus(state.updateStatus);
@@ -856,6 +1183,19 @@ window.searchUpdater.onProgress((progress) => {
   const percent = Math.round((progress.current / progress.total) * 100);
   elements.progressFill.style.width = `${percent}%`;
   elements.progressText.textContent = progressMessage(progress);
+});
+
+window.searchUpdater.onAuditProgress((progress) => {
+  if (progress.phase === 'collecting') {
+    elements.auditProgressFill.style.width = '30%';
+    elements.auditProgressText.textContent = t('auditCollecting');
+  } else if (progress.phase === 'analyzing') {
+    elements.auditProgressFill.style.width = '70%';
+    elements.auditProgressText.textContent = t('auditAnalyzing');
+  } else if (progress.phase === 'done') {
+    elements.auditProgressFill.style.width = '100%';
+    elements.auditProgressText.textContent = t('auditDone');
+  }
 });
 
 window.searchUpdater.onUpdateStatus(handleUpdateStatus);

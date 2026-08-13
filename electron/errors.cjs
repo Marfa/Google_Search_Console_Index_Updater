@@ -1,5 +1,3 @@
-const { loadSettings } = require('./settings.cjs');
-
 const API_ENABLE_LINKS = {
   searchconsole: 'https://console.cloud.google.com/apis/library/searchconsole.googleapis.com',
   indexing: 'https://console.cloud.google.com/apis/library/indexing.googleapis.com',
@@ -14,6 +12,9 @@ const MESSAGES = {
     clientCredentialsRequired: 'Client ID and Client Secret are required',
     authRequired: 'Authentication required',
     urlListEmpty: 'URL list is empty',
+    siteRequired: 'Select a Search Console property',
+    aiKeyRequired: 'Save an AI API key before running the audit',
+    aiConfigRequired: 'AI base URL and model are required',
   },
   ru: {
     searchConsoleApi:
@@ -23,11 +24,22 @@ const MESSAGES = {
     clientCredentialsRequired: 'Укажите Client ID и Client Secret',
     authRequired: 'Требуется авторизация',
     urlListEmpty: 'Список URL пуст',
+    siteRequired: 'Выберите свойство Search Console',
+    aiKeyRequired: 'Сохраните API-ключ ИИ перед запуском аудита',
+    aiConfigRequired: 'Укажите base URL и модель ИИ',
   },
 };
 
 function resolveLocale(locale) {
   return locale === 'en' ? 'en' : 'ru';
+}
+
+function currentLocale() {
+  try {
+    return require('./settings.cjs').loadSettings().locale;
+  } catch {
+    return 'ru';
+  }
 }
 
 function fill(template, values) {
@@ -42,7 +54,7 @@ function extractProjectId(message) {
   return match ? match[1] : null;
 }
 
-function formatGoogleApiError(message, locale = loadSettings().locale) {
+function formatGoogleApiError(message, locale = currentLocale()) {
   const texts = MESSAGES[resolveLocale(locale)];
   const projectId = extractProjectId(message);
 
@@ -65,7 +77,7 @@ function formatGoogleApiError(message, locale = loadSettings().locale) {
   return message;
 }
 
-function formatError(error, locale = loadSettings().locale) {
+function formatError(error, locale = currentLocale()) {
   let message = error?.message || String(error);
 
   const ipcMatch = message.match(/Error invoking remote method '[^']+': (?:Error: )?([\s\S]+)/);
@@ -76,7 +88,7 @@ function formatError(error, locale = loadSettings().locale) {
   return formatGoogleApiError(message, locale);
 }
 
-function appMessage(key, locale = loadSettings().locale) {
+function appMessage(key, locale = currentLocale()) {
   return MESSAGES[resolveLocale(locale)][key];
 }
 
