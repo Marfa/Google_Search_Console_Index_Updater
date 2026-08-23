@@ -1,6 +1,6 @@
 {
   "name": "google-search-console-updater",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Portable app for Google Search Console URL inspection, indexing, and AI site audit",
   "main": "electron/main.cjs",
   "author": "Marfa",
@@ -19,20 +19,21 @@
     "build:publish": "electron-builder --mac zip --publish always",
     "audit": "npm audit",
     "outdated": "npx npm-check-updates",
-    "check:audit-helpers": "node scripts/check-audit-helpers.cjs"
+    "check:audit-helpers": "node scripts/check-audit-helpers.cjs",
+    "check:errors": "node scripts/check-errors.cjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
     "google-auth-library": "^10.9.0"
   },
   "devDependencies": {
-    "archiver": "^7.0.1",
-    "electron": "^43.1.1",
+    "archiver": "^8.0.0",
+    "electron": "^43.4.1",
     "electron-builder": "^26.15.3",
-    "pe-library": "^1.0.1",
-    "png-to-ico": "^3.0.1",
+    "pe-library": "^2.0.1",
+    "png-to-ico": "^3.0.2",
     "resedit": "^3.0.2",
-    "sharp": "^0.35.1"
+    "sharp": "^0.35.3"
   },
   "build": {
     "appId": "com.marfa.gsc-updater",

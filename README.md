@@ -6,12 +6,12 @@
 
 ```bash
 # macOS (Apple Silicon)
-# скачайте Google-Search-Console-Updater-2.0.0-mac-arm64.zip из Releases
+# скачайте Google-Search-Console-Updater-2.0.1-mac-arm64.zip из Releases
 xattr -cr "Google Search Console Updater.app"
 open "Google Search Console Updater.app"
 ```
 
-**Версия:** 2.0.0 · **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater) · **Лицензия:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+**Версия:** 2.0.1 · **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater) · **Лицензия:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 > Коммерческое использование без отдельного согласования не допускается.
 
@@ -36,7 +36,7 @@ open "Google Search Console Updater.app"
 
 | Платформа | Файл |
 |-----------|------|
-| macOS arm64 | `Google-Search-Console-Updater-2.0.0-mac-arm64.zip` |
+| macOS arm64 | `Google-Search-Console-Updater-2.0.1-mac-arm64.zip` |
 | Windows x64 | `Google-Search-Console-Updater-<версия>-win-x64.zip` |
 
 ### Windows (x64)
@@ -128,7 +128,7 @@ codesign --force --deep --sign - "/путь/к/Google Search Console Updater.app
 ```bash
 npm install
 npm start
-npm run build:mac   # → dist/Google-Search-Console-Updater-2.0.0-mac-arm64.zip
+npm run build:mac   # → dist/Google-Search-Console-Updater-2.0.1-mac-arm64.zip
 npm run build:win
 npm run check:audit-helpers
 ```
