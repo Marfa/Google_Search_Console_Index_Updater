@@ -54,16 +54,14 @@ function extractProjectId(message) {
   return match ? match[1] : null;
 }
 
-function mentionsHost(message, host) {
-  const escaped = host.replace(/\./g, '\\.');
-  return new RegExp(`(^|[^A-Za-z0-9.-])${escaped}([^A-Za-z0-9.-]|$)`).test(message);
-}
+const SEARCHCONSOLE_HOST_RE = /(^|[^A-Za-z0-9.-])searchconsole\.googleapis\.com([^A-Za-z0-9.-]|$)/;
+const INDEXING_HOST_RE = /(^|[^A-Za-z0-9.-])indexing\.googleapis\.com([^A-Za-z0-9.-]|$)/;
 
 function formatGoogleApiError(message, locale = currentLocale()) {
   const texts = MESSAGES[resolveLocale(locale)];
   const projectId = extractProjectId(message);
 
-  if (mentionsHost(message, 'searchconsole.googleapis.com') || message.includes('Search Console API')) {
+  if (SEARCHCONSOLE_HOST_RE.test(message) || message.includes('Search Console API')) {
     const link = projectId
       ? `https://console.developers.google.com/apis/api/searchconsole.googleapis.com/overview?project=${projectId}`
       : API_ENABLE_LINKS.searchconsole;
@@ -71,7 +69,7 @@ function formatGoogleApiError(message, locale = currentLocale()) {
     return fill(texts.searchConsoleApi, { link });
   }
 
-  if (mentionsHost(message, 'indexing.googleapis.com') || message.includes('Indexing API')) {
+  if (INDEXING_HOST_RE.test(message) || message.includes('Indexing API')) {
     const link = projectId
       ? `https://console.developers.google.com/apis/api/indexing.googleapis.com/overview?project=${projectId}`
       : API_ENABLE_LINKS.indexing;
