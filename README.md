@@ -6,12 +6,12 @@
 
 ```bash
 # macOS (Apple Silicon)
-# скачайте Google-Search-Console-Updater-2.0.1-mac-arm64.zip из Releases
+# скачайте Google-Search-Console-Updater-2.0.2-mac-arm64.zip из Releases
 xattr -cr "Google Search Console Updater.app"
 open "Google Search Console Updater.app"
 ```
 
-**Версия:** 2.0.1 · **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater) · **Лицензия:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+**Версия:** 2.0.2 · **Исходный код:** [github.com/Marfa/Google_Search_Console_Index_Updater](https://github.com/Marfa/Google_Search_Console_Index_Updater) · **Лицензия:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 > Коммерческое использование без отдельного согласования не допускается.
 
@@ -26,7 +26,7 @@ open "Google Search Console Updater.app"
 | Индексация | URL Inspection + запрос индексирования для страниц вне индекса |
 | Аудит сайта | Baseline Search Analytics (28/90 дней), sitemaps, ИИ-отчёт |
 | Ваш AI | OpenAI-compatible: OpenAI, Groq, xAI Grok, OpenRouter… |
-| Импорт / экспорт | `.txt` `.csv` `.xls` `.xlsx` → CSV; аудит → Markdown |
+| Импорт / экспорт | `.txt` `.csv` `.xls` `.xlsx` `.numbers` → CSV; аудит → Markdown |
 | Язык | RU / EN, включая OAuth callback |
 | Обновления | Автопроверка [GitHub Releases](https://github.com/Marfa/Google_Search_Console_Index_Updater/releases) |
 
@@ -36,7 +36,7 @@ open "Google Search Console Updater.app"
 
 | Платформа | Файл |
 |-----------|------|
-| macOS arm64 | `Google-Search-Console-Updater-2.0.1-mac-arm64.zip` |
+| macOS arm64 | `Google-Search-Console-Updater-2.0.2-mac-arm64.zip` |
 | Windows x64 | `Google-Search-Console-Updater-<версия>-win-x64.zip` |
 
 ### Windows (x64)
@@ -128,7 +128,7 @@ codesign --force --deep --sign - "/путь/к/Google Search Console Updater.app
 ```bash
 npm install
 npm start
-npm run build:mac   # → dist/Google-Search-Console-Updater-2.0.1-mac-arm64.zip
+npm run build:mac   # → dist/Google-Search-Console-Updater-2.0.2-mac-arm64.zip
 npm run build:win
 npm run check:audit-helpers
 ```

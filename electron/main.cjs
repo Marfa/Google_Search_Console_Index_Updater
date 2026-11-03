@@ -308,7 +308,7 @@ ipcMain.handle('urls:import-file', async (event) => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
-      { name: 'URL lists', extensions: ['txt', 'csv', 'xls', 'xlsx'] },
+      { name: 'URL lists', extensions: ['txt', 'csv', 'xls', 'xlsx', 'numbers'] },
     ],
   });
 

@@ -1,11 +1,12 @@
 const path = require('path');
 const zlib = require('zlib');
 
-const SUPPORTED_EXTENSIONS = new Set(['.txt', '.csv', '.xls', '.xlsx']);
+const SUPPORTED_EXTENSIONS = new Set(['.txt', '.csv', '.xls', '.xlsx', '.numbers']);
 const URL_RE = /https?:\/\/[^\s"'<>,;\x00-\x1f]+/gi;
 const TRAILING_JUNK = /[)>:@;,]+$/;
 const IGNORED_URL_HOSTS = new Set(['schemas.openxmlformats.org', 'www.w3.org']);
 const XLSX_XML_RE = /^xl\/(sharedStrings|worksheets\/sheet\d+)\.xml$/;
+const NUMBERS_IWA_RE = /^Index\/.+\.iwa$/i;
 
 function isSupportedImportFile(filePath) {
   return SUPPORTED_EXTENSIONS.has(path.extname(filePath).toLowerCase());
@@ -28,8 +29,7 @@ function isIgnoredUrl(url) {
   }
 }
 
-function extractTextFromXlsxBuffer(buffer) {
-  const texts = [];
+function readZipLocalEntries(buffer, nameRe, onEntry) {
   let offset = 0;
 
   while (offset < buffer.length - 4) {
@@ -51,26 +51,138 @@ function extractTextFromXlsxBuffer(buffer) {
     const dataStart = offset + 30 + nameLen + extraLen;
     const data = buffer.slice(dataStart, dataStart + compSize);
 
-    if (XLSX_XML_RE.test(name)) {
-      let xml = null;
+    if (nameRe.test(name)) {
+      let payload = null;
       if (method === 0) {
-        xml = data;
+        payload = data;
       } else if (method === 8) {
         try {
-          xml = zlib.inflateRawSync(data);
+          payload = zlib.inflateRawSync(data);
         } catch {
-          xml = null;
+          payload = null;
         }
       }
 
-      if (xml) {
-        texts.push(xml.toString('utf8'));
+      if (payload) {
+        onEntry(name, payload);
       }
     }
 
     offset = dataStart + compSize;
   }
+}
 
+function extractTextFromXlsxBuffer(buffer) {
+  const texts = [];
+  readZipLocalEntries(buffer, XLSX_XML_RE, (_name, xml) => {
+    texts.push(xml.toString('utf8'));
+  });
+  return texts.join('\n');
+}
+
+function snappyDecompress(data) {
+  let offset = 0;
+  while (offset < data.length) {
+    const byte = data[offset];
+    offset += 1;
+    if ((byte & 0x80) === 0) {
+      break;
+    }
+  }
+
+  let out = Buffer.alloc(Math.max(data.length * 2, 64));
+  let outLen = 0;
+
+  const ensure = (need) => {
+    if (outLen + need <= out.length) {
+      return;
+    }
+    const next = Buffer.alloc(Math.max(out.length * 2, outLen + need));
+    out.copy(next, 0, 0, outLen);
+    out = next;
+  };
+
+  while (offset < data.length) {
+    const tag = data[offset];
+    offset += 1;
+    const element = tag & 0x03;
+
+    if (element === 0) {
+      let length = (tag >> 2) + 1;
+      if (length >= 61) {
+        const nbytes = length - 60;
+        length = 1;
+        for (let i = 0; i < nbytes; i += 1) {
+          length += data[offset + i] << (8 * i);
+        }
+        offset += nbytes;
+      }
+      ensure(length);
+      data.copy(out, outLen, offset, offset + length);
+      outLen += length;
+      offset += length;
+      continue;
+    }
+
+    let length = 0;
+    let copyOffset = 0;
+    if (element === 1) {
+      length = ((tag >> 2) & 0x07) + 4;
+      copyOffset = ((tag & 0xe0) << 3) | data[offset];
+      offset += 1;
+    } else if (element === 2) {
+      length = (tag >> 2) + 1;
+      copyOffset = data.readUInt16LE(offset);
+      offset += 2;
+    } else {
+      length = (tag >> 2) + 1;
+      copyOffset = data.readUInt32LE(offset);
+      offset += 4;
+    }
+
+    if (copyOffset === 0 || copyOffset > outLen) {
+      break;
+    }
+
+    ensure(length);
+    const start = outLen - copyOffset;
+    for (let i = 0; i < length; i += 1) {
+      out[outLen + i] = out[start + i];
+    }
+    outLen += length;
+  }
+
+  return out.subarray(0, outLen);
+}
+
+function decompressIwaBuffer(buffer) {
+  const parts = [];
+  let offset = 0;
+
+  while (offset + 4 <= buffer.length) {
+    const compressedLength = buffer[offset + 1] | (buffer[offset + 2] << 8) | (buffer[offset + 3] << 16);
+    offset += 4;
+    const chunk = buffer.subarray(offset, offset + compressedLength);
+    offset += compressedLength;
+    if (!chunk.length) {
+      break;
+    }
+
+    try {
+      parts.push(snappyDecompress(chunk));
+    } catch {
+      parts.push(chunk);
+    }
+  }
+
+  return Buffer.concat(parts);
+}
+
+function extractTextFromNumbersBuffer(buffer) {
+  const texts = [];
+  readZipLocalEntries(buffer, NUMBERS_IWA_RE, (_name, iwa) => {
+    texts.push(decompressIwaBuffer(iwa).toString('utf8'));
+  });
   return texts.join('\n');
 }
 
@@ -153,6 +265,9 @@ function extractUrlsFromFile(filePath, buffer) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.xlsx') {
     return extractUrlsFromText(extractTextFromXlsxBuffer(buffer));
+  }
+  if (ext === '.numbers') {
+    return extractUrlsFromText(extractTextFromNumbersBuffer(buffer));
   }
 
   return extractUrlsFromBuffer(buffer);
