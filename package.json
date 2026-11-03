@@ -24,11 +24,11 @@
   },
   "dependencies": {
     "electron-updater": "6.8.11",
-    "google-auth-library": "10.9.1"
+    "google-auth-library": "11.3.2"
   },
   "devDependencies": {
     "archiver": "^8.0.0",
-    "electron": "43.8.6",
+    "electron": "44.10.1",
     "electron-builder": "26.18.0",
     "pe-library": "^2.0.1",
     "png-to-ico": "^3.0.2",
