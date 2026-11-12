@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "electron-updater": "6.8.11",
-    "google-auth-library": "11.3.2"
+    "google-auth-library": "11.3.3"
   },
   "devDependencies": {
     "archiver": "^8.0.0",
